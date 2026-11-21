@@ -1,0 +1,560 @@
+import { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import {
+  Filter,
+  ShoppingCart,
+  Star,
+  Heart,
+  Eye,
+  X,
+  Check,
+  ChevronDown
+} from 'lucide-react';
+import { useAppStore } from '@/store';
+import { products, flavorLabels, flavorColors, testimonials } from '@/data/products';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
+import type { Product } from '@/types';
+
+const flavors = ['todos', 'fresa', 'mora', 'maracuya', 'natural', 'mango'];
+const sizes = ['todos', 'individual', 'familiar', 'premium'];
+
+const badgeKeys: Record<string, string> = {
+  'Popular': 'popular',
+  'Premium': 'premium',
+  'Nuevo': 'new',
+  'Clásico': 'classic',
+  'Ahorra 15%': 'save',
+};
+
+export function Products() {
+  const { t, i18n } = useTranslation();
+
+  const {
+    addToCart,
+    likedProducts,
+    toggleLikeProduct,
+    userReviews,
+    productOverrides,
+    addProductReview,
+    user
+  } = useAppStore();
+
+  const [selectedFlavor, setSelectedFlavor] = useState('todos');
+  const [selectedSize, setSelectedSize] = useState('todos');
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+
+  // New review form states
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewName, setReviewName] = useState('');
+
+  const filteredProducts = useMemo(() => {
+    return products.map(product => {
+      const override = productOverrides[product.id];
+      if (override) {
+        return { ...product, rating: override.rating, reviews: override.reviews };
+      }
+      return product;
+    }).filter((product) => {
+      const flavorMatch = selectedFlavor === 'todos' || product.flavor === selectedFlavor;
+      const sizeMatch = selectedSize === 'todos' || product.size === selectedSize;
+      const favoriteMatch = !showFavoritesOnly || likedProducts.includes(product.id);
+      return flavorMatch && sizeMatch && favoriteMatch;
+    });
+  }, [selectedFlavor, selectedSize, showFavoritesOnly, likedProducts, productOverrides]);
+
+  const handleAddToCart = (product: Product) => {
+    addToCart(product);
+    toast.success(`${product.name} ${t('products.addToCart')}`, {
+      description: `$${product.price.toLocaleString()} ${t('common.cop')}`,
+      icon: <ShoppingCart className="w-4 h-4" />,
+    });
+  };
+
+  const toggleLike = (productId: string) => {
+    const isLiked = likedProducts.includes(productId);
+    toggleLikeProduct(productId);
+    if (isLiked) {
+      toast.info('Eliminado de favoritos');
+    } else {
+      toast.success('Agregado a favoritos');
+    }
+  };
+
+  const clearFilters = () => {
+    setSelectedFlavor('todos');
+    setSelectedSize('todos');
+    setShowFavoritesOnly(false);
+  };
+
+  const getProductTestimonials = (product: Product) => {
+    const staticReviews = testimonials.filter(
+      (t) =>
+        t.flavor.toLowerCase() === flavorLabels[product.flavor]?.toLowerCase() ||
+        t.flavor.toLowerCase() === product.flavor.toLowerCase()
+    );
+    const dynamicReviews = userReviews[product.id] || [];
+    return [...dynamicReviews, ...staticReviews];
+  };
+
+  const handleReviewSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProduct) return;
+
+    const newReview = {
+      id: Date.now().toString(),
+      name: reviewName.trim() || user?.name || 'Cliente Verificado',
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${reviewName || 'anon'}`,
+      rating: reviewRating,
+      comment: reviewComment.trim(),
+      date: new Date().toISOString().split('T')[0],
+      flavor: flavorLabels[selectedProduct.flavor] || selectedProduct.flavor,
+    };
+
+    addProductReview(selectedProduct.id, newReview);
+    toast.success('¡Reseña publicada!', {
+      description: 'Gracias por compartir tu opinión sobre este producto.',
+    });
+
+    setReviewComment('');
+    setReviewName('');
+    setReviewRating(5);
+  };
+
+  const getFlavorLabel = (flavor: string) => {
+    return i18n.language === 'en'
+      ? t(`products.flavors.${flavor}`)
+      : flavorLabels[flavor] || flavor;
+  };
+
+  const getSizeLabel = (size: string) => {
+    return t(`products.sizes.${size}`);
+  };
+
+  return (
+    <section id="productos" className="section-padding bg-muted/30">
+      <div className="container-velmor">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-12"
+        >
+          <Badge variant="secondary" className="mb-4">
+            {t('header.nav.products')}
+          </Badge>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl brand-font text-foreground mb-4">
+            {t('products.title')}
+          </h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto body-font">
+            {t('products.subtitle')}
+          </p>
+        </motion.div>
+
+        {/* Filters */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.1 }}
+          className="bg-card rounded-2xl p-6 shadow-sm mb-8"
+        >
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Filter className="w-5 h-5" />
+              <span className="font-medium">{t('products.filter.title')}:</span>
+            </div>
+
+            {/* Flavor Filter */}
+            <div className="flex flex-wrap gap-2">
+              {flavors.map((flavor) => (
+                <Button
+                  key={flavor}
+                  variant={selectedFlavor === flavor ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedFlavor(flavor)}
+                  className="rounded-full"
+                >
+                  {flavor === 'todos' ? t('products.filter.all') : getFlavorLabel(flavor)}
+                </Button>
+              ))}
+            </div>
+
+            {/* Favorites Toggle */}
+            <Button
+              variant={showFavoritesOnly ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+              className="rounded-full gap-1.5"
+            >
+              <Heart className={`w-4 h-4 ${showFavoritesOnly ? 'fill-current text-white' : 'text-red-500'}`} />
+              {showFavoritesOnly ? 'Ver Todos' : 'Ver Favoritos'}
+            </Button>
+
+            <div className="flex-1" />
+
+            {/* Size Filter */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  {selectedSize === 'todos' ? t('products.filter.allSizes') : getSizeLabel(selectedSize)}
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {sizes.map((size) => (
+                  <DropdownMenuItem
+                    key={size}
+                    onClick={() => setSelectedSize(size)}
+                    className={selectedSize === size ? 'bg-primary/10' : ''}
+                  >
+                    {size === 'todos' ? t('products.filter.allSizes') : getSizeLabel(size)}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {(selectedFlavor !== 'todos' || selectedSize !== 'todos') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="text-muted-foreground"
+              >
+                <X className="w-4 h-4 mr-1" />
+                {t('products.filter.clear')}
+              </Button>
+            )}
+          </div>
+
+          {/* Results count */}
+          <div className="mt-4 text-sm text-muted-foreground">
+            {t('products.results', { count: filteredProducts.length, total: products.length })}
+          </div>
+        </motion.div>
+
+        {/* Products Grid */}
+        <motion.div
+          layout
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+        >
+          <AnimatePresence mode="popLayout">
+            {filteredProducts.map((product, index) => (
+              <motion.div
+                key={product.id}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+              >
+                <Card className="group overflow-hidden card-hover focus-visible-ring">
+                  {/* Image */}
+                  <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-muted to-muted/50">
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+
+                    {/* Badges */}
+                    <div className="absolute top-3 left-3 flex flex-col gap-2">
+                      {product.badge && (
+                        <Badge className={`bg-gradient-to-r ${flavorColors[product.flavor].gradient}`}>
+                          {t(`products.badge.${badgeKeys[product.badge] || 'popular'}`)}
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        className="w-8 h-8 rounded-full focus-visible-ring hover:shadow-lg transition-shadow duration-200"
+                        onClick={() => toggleLike(product.id)}
+                      >
+                        <Heart
+                          className={`w-4 h-4 ${likedProducts.includes(product.id) ? 'fill-red-500 text-red-500' : ''}`}
+                        />
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        className="w-8 h-8 rounded-full focus-visible-ring hover:shadow-lg transition-shadow duration-200"
+                        onClick={() => setSelectedProduct(product)}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    </div>
+
+                    {/* Flavor indicator */}
+                    <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${flavorColors[product.flavor].gradient}`} />
+                  </div>
+
+                  {/* Content */}
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h3 className="font-semibold text-foreground line-clamp-1">
+                          {product.name}
+                        </h3>
+                        <p className="text-xs text-muted-foreground">
+                          {getSizeLabel(product.size)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1 text-amber-500">
+                        <Star className="w-4 h-4 fill-current" />
+                        <span className="text-sm font-medium">{product.rating}</span>
+                      </div>
+                    </div>
+
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-4 body-font">
+                      {product.description}
+                    </p>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-lg font-bold text-primary">
+                          ${product.price.toLocaleString()}
+                        </span>
+                        {product.originalPrice && (
+                          <span className="text-sm text-muted-foreground line-through ml-2">
+                            ${product.originalPrice.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => handleAddToCart(product)}
+                        className="btn-primary-velmor focus-visible-ring hover:shadow-lg transition-shadow duration-200 whileTap:scale-[0.97]"
+                      >
+                        <ShoppingCart className="w-4 h-4 mr-1" />
+                        {t('products.addToCart')}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </motion.div>
+
+        {/* Empty State */}
+        {filteredProducts.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-16"
+          >
+            <div className="text-6xl mb-4">🔍</div>
+            <h3 className="text-xl font-semibold mb-2">{t('products.empty.title')}</h3>
+            <p className="text-muted-foreground mb-4">
+              {t('products.empty.description')}
+            </p>
+            <Button onClick={clearFilters}>{t('products.empty.cta')}</Button>
+          </motion.div>
+        )}
+      </div>
+
+      {/* Product Detail Dialog */}
+      <Dialog open={!!selectedProduct} onOpenChange={() => setSelectedProduct(null)}>
+        <DialogContent className="max-w-2xl">
+          {selectedProduct && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="brand-font text-2xl">
+                  {selectedProduct.name}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="grid md:grid-cols-2 gap-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="aspect-square rounded-lg overflow-hidden">
+                  <img
+                    src={selectedProduct.image}
+                    alt={selectedProduct.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Badge variant="secondary">{getFlavorLabel(selectedProduct.flavor)}</Badge>
+                    <Badge variant="outline">{getSizeLabel(selectedProduct.size)}</Badge>
+                  </div>
+
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="flex items-center text-amber-500">
+                      <Star className="w-5 h-5 fill-current" />
+                      <span className="ml-1 font-medium">{selectedProduct.rating}</span>
+                    </div>
+                    <span className="text-muted-foreground">
+                      ({selectedProduct.reviews} {t('products.modal.verified')})
+                    </span>
+                  </div>
+
+                  <p className="text-muted-foreground mb-6 body-font">
+                    {selectedProduct.description}
+                  </p>
+
+                  <div className="flex items-center gap-4 mb-6">
+                    <span className="text-3xl font-bold text-primary">
+                      ${selectedProduct.price.toLocaleString()}
+                    </span>
+                    {selectedProduct.originalPrice && (
+                      <span className="text-xl text-muted-foreground line-through">
+                        ${selectedProduct.originalPrice.toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex gap-3">
+                    <Button
+                      className="flex-1 btn-primary-velmor focus-visible-ring hover:shadow-lg transition-shadow duration-200 whileTap:scale-[0.97]"
+                      onClick={() => {
+                        handleAddToCart(selectedProduct);
+                        setSelectedProduct(null);
+                      }}
+                    >
+                      <ShoppingCart className="w-4 h-4 mr-2" />
+                      {t('products.addToCart')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => toggleLike(selectedProduct.id)}
+                      className="focus-visible-ring hover:shadow-lg transition-shadow duration-200 whileTap:scale-[0.97]"
+                    >
+                      <Heart
+                        className={`w-5 h-5 ${likedProducts.includes(selectedProduct.id) ? 'fill-red-500 text-red-500' : ''}`}
+                      />
+                    </Button>
+                  </div>
+
+                  {/* Features */}
+                  <div className="mt-6 pt-6 border-t">
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        'noPreservatives',
+                        'highProtein',
+                        'probiotics',
+                        'returnable',
+                      ].map((feature, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Check className="w-4 h-4 text-primary" />
+                          {t(`products.features.${feature}`)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reseñas y opiniones */}
+                <div className="md:col-span-2 border-t pt-6 mt-4 space-y-6">
+                  <h3 className="font-semibold text-lg text-foreground">Reseñas y Opiniones</h3>
+
+                  {/* Formulario de Reseña */}
+                  <form onSubmit={handleReviewSubmit} className="space-y-4 bg-muted/40 p-4 rounded-xl">
+                    <h4 className="font-semibold text-sm text-foreground">Escribe tu opinión</h4>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="reviewName">Tu Nombre</Label>
+                        <Input
+                          id="reviewName"
+                          value={reviewName}
+                          onChange={(e) => setReviewName(e.target.value)}
+                          placeholder={user?.name || "Ej. Juan Pérez"}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label className="block mb-1.5">Calificación</Label>
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setReviewRating(star)}
+                              className="text-amber-500 hover:scale-110 transition-transform"
+                            >
+                              <Star className={`w-6 h-6 ${reviewRating >= star ? 'fill-current' : 'text-muted-foreground/30'}`} />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="reviewComment">Comentario</Label>
+                        <Textarea
+                          id="reviewComment"
+                          value={reviewComment}
+                          onChange={(e) => setReviewComment(e.target.value)}
+                          placeholder="Comparte tu experiencia con este sabor..."
+                          rows={3}
+                          required
+                        />
+                      </div>
+                      <Button type="submit" size="sm" className="btn-primary-velmor focus-visible-ring hover:shadow-lg transition-shadow duration-200 whileTap:scale-[0.97]">
+                        Enviar Reseña
+                      </Button>
+                    </form>
+
+                    {/* Listado de Reseñas */}
+                    <div className="space-y-4">
+                      {getProductTestimonials(selectedProduct).map((rev) => (
+                        <div key={rev.id} className="border-b pb-4 space-y-2 last:border-0 last:pb-0">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={rev.avatar}
+                                alt={rev.name}
+                                className="w-8 h-8 rounded-full bg-primary/10"
+                              />
+                              <div>
+                                <p className="font-semibold text-sm text-foreground">{rev.name}</p>
+                                <p className="text-[10px] text-muted-foreground">{rev.date}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center text-amber-500 gap-0.5">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`w-3.5 h-3.5 ${i < rev.rating ? 'fill-current' : 'text-muted-foreground/30'}`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground italic body-font">
+                            "{rev.comment}"
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </section>
+  );
+}

@@ -1,0 +1,157 @@
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import { Moon, Sun, Menu, X as XIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAppStore } from '@/store';
+
+export function Header() {
+  const { t } = useTranslation();
+  const { theme, toggleTheme } = useAppStore();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  return (
+    <header className="fixed w-full z-50 bg-background/80 backdrop-blur-sm">
+      <div className="container-velmor">
+        <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+          {/* Logo */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="flex items-center gap-3"
+          >
+            <div className="w-8 h-8 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center">
+              <span className="text-xs font-bold text-foreground">V</span>
+            </div>
+            <h1 className="text-xl font-bold brand-font text-foreground">
+              {t('header.title')}
+            </h1>
+          </motion.div>
+
+          {/* Navigation */}
+          <nav className="hidden md:flex space-x-6">
+            {[
+              { id: 'inicio', label: 'header.nav.home' },
+              { id: 'productos', label: 'header.nav.products' },
+              { id: 'nosotros', label: 'header.nav.about' },
+              { id: 'testimonios', label: 'header.nav.testimonials' },
+              { id: 'historia', label: 'header.nav.story' },
+              { id: 'newsletter', label: 'header.nav.newsletter' },
+              { id: 'contacto', label: 'header.nav.contact' }
+            ].map((nav) => (
+              <motion.div
+                key={nav.id}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 + parseFloat(nav.id) * 0.02 }}
+                className="relative"
+              >
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex-1 text-left text-sm font-medium transition-all duration-200 group"
+                  onClick={() => {
+                    const element = document.querySelector(`#${nav.id}`);
+                    if (element) {
+                      element.scrollIntoView({ behavior: 'smooth' });
+                    }
+                    setIsMenuOpen(false);
+                  }}
+                >
+                  {t(nav.label)}
+                  <span className="absolute bottom-0 left-0 h-0.5 w-full bg-primary/0 group-hover:bg-primary/50 transition-all duration-300"></span>
+                </Button>
+              </motion.div>
+            ))}
+          </nav>
+
+          {/* Actions */}
+          <div className="flex items-center gap-3">
+            {/* Theme Toggle */}
+            <motion.button
+              onClick={toggleTheme}
+              className="p-2 rounded-full hover:bg-muted/50 transition-all duration-200 focus-visible-ring"
+              aria-label={t('header.theme-toggle')}
+            >
+              {theme === 'dark' ? <Sun className="w-5 h-5 text-primary" /> : <Moon className="w-5 h-5 text-muted-foreground" />}
+            </motion.button>
+
+            {/* Cart */}
+            <motion.div
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+              className="relative"
+            >
+              <Button
+                variant="outline"
+                size="icon"
+                className="p-2 relative"
+                onClick={() => {
+                  // Cart drawer would be handled by state/context
+                }}
+              >
+                <ShoppingCart className="w-5 h-5 text-primary" />
+                {/* Cart badge would go here */}
+              </Button>
+            </motion.div>
+
+            {/* Mobile Menu Button */}
+            <motion.button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="md:hidden p-2 rounded-full hover:bg-muted/50 transition-all duration-200 focus-visible-ring"
+              aria-label={t('header.menu-toggle')}
+            >
+              {isMenuOpen ? <XIcon className="w-5 h-5 text-primary" /> : <Menu className="w-5 h-5 text-primary" />}
+            </motion.button>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            className="md:hidden absolute top-16 left-0 right-0 bg-background/95 backdrop-blur-sm border-b border-border/20 z-40"
+          >
+            <nav className="px-4 py-6 space-y-4">
+              {[
+                { id: 'inicio', label: 'header.nav.home' },
+                { id: 'productos', label: 'header.nav.products' },
+                { id: 'nosotros', label: 'header.nav.about' },
+                { id: 'testimonios', label: 'header.nav.testimonials' },
+                { id: 'historia', label: 'header.nav.story' },
+                { id: 'newsletter', label: 'header.nav.newsletter' },
+                { id: 'contacto', label: 'header.nav.contact' }
+              ].map((nav) => (
+                <motion.div
+                  key={nav.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 + parseFloat(nav.id) * 0.02 }}
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-left text-base font-medium py-2 px-3 rounded-lg transition-all duration-200 hover:bg-muted/50"
+                    onClick={() => {
+                      const element = document.querySelector(`#${nav.id}`);
+                      if (element) {
+                        element.scrollIntoView({ behavior: 'smooth' });
+                      }
+                      setIsMenuOpen(false);
+                    }}
+                  >
+                    {t(nav.label)}
+                  </Button>
+                </motion.div>
+              ))}
+            </nav>
+          </motion.div>
+        )}
+      </div>
+    </header>
+  );
+}

@@ -1,0 +1,126 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Luminous Nordic & Eje Cafetero Palette (Strictly Light, Clear & Warm) */
+  :root,
+  .theme-nordic {
+    --background: 40 33% 98%;          /* #FAF8F5 Creamy White */
+    --foreground: 215 35% 15%;         /* #192434 Deep Nordic Slate (WCAG AAA) */
+    --card: 0 0% 100%;                 /* #FFFFFF Pure White */
+    --card-foreground: 215 35% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 35% 15%;
+    --primary: 207 100% 26%;           /* #004B87 Official Nordic Blue */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 198 68% 52%;          /* #33A6D8 Soft Sky Blue */
+    --secondary-foreground: 215 35% 15%;
+    --muted: 40 25% 94%;               /* #F3EFEA Warm Cream Muted */
+    --muted-foreground: 215 20% 38%;   /* #4E5E74 High-Contrast Muted Slate (WCAG AA) */
+    --accent: 137 58% 41%;             /* #2CA64E Fresh Eje Cafetero Green */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 210 25% 88%;             /* #D9E1E8 Crisp Soft Border */
+    --input: 210 25% 88%;
+    --ring: 207 100% 26%;
+    --radius: 0.875rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    background-color: #FAF8F5;
+    color: #192434;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #FAF8F5;
+    color: #192434;
+  }
+
+  h1, h2, .font-serif-display {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.35);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.6);
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.2);
+  }
+  50% {
+    box-shadow: 0 0 40px hsl(var(--primary) / 0.45);
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Focus styles for accessibility */
+*:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
