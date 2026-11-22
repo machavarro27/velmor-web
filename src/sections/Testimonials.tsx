@@ -11,11 +11,35 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 
+const FAQ_BACKGROUNDS = [
+  {
+    src: '/images/faq-dosquebradas-1.jpg',
+    labelEs: 'Viaducto Helicoidal · Dosquebradas, Risaralda',
+    labelEn: 'Helicoidal Viaduct · Dosquebradas, Risaralda',
+  },
+  {
+    src: '/images/faq-dosquebradas-2.jpg',
+    labelEs: 'Montañas Verdes y Valle de Dosquebradas',
+    labelEn: 'Green Mountains & Valley of Dosquebradas',
+  },
+  {
+    src: '/images/faq-dosquebradas-3.jpg',
+    labelEs: 'Cordillera y Cielo del Eje Cafetero',
+    labelEn: 'Mountain Range & Sky of the Coffee Region',
+  },
+  {
+    src: '/images/faq-dosquebradas-4.jpg',
+    labelEs: 'Bruma Matinal en las Colinas de Dosquebradas',
+    labelEn: 'Morning Mist in the Dosquebradas Hills',
+  },
+] as const;
+
 export function Testimonials() {
   const { t, i18n } = useTranslation();
   const isEn = i18n.language?.startsWith('en');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
+  const [faqBgIndex, setFaqBgIndex] = useState(0);
   const sectionRef = useRef<HTMLElement>(null);
 
   const { scrollYProgress } = useScroll({
@@ -33,6 +57,14 @@ export function Testimonials() {
       setCurrentIndex((prev) => (prev + 1) % testimonials.length);
     }, 6000);
     return () => clearInterval(timer);
+  }, []);
+
+  // Automatic background slideshow for the FAQ section (cycles every 4.5s)
+  useEffect(() => {
+    const bgTimer = setInterval(() => {
+      setFaqBgIndex((prev) => (prev + 1) % FAQ_BACKGROUNDS.length);
+    }, 4500);
+    return () => clearInterval(bgTimer);
   }, []);
 
   const navigate = (newDirection: number) => {
@@ -217,7 +249,7 @@ export function Testimonials() {
           </div>
         </motion.div>
 
-        {/* FAQ Section with Panoramic Dosquebradas / Eje Cafetero Mountain Background */}
+        {/* FAQ Section with Automatic Panoramic Slideshow of Dosquebradas / Eje Cafetero */}
         <motion.div
           style={{ y: faqParallaxY }}
           initial={{ opacity: 0, y: 28 }}
@@ -226,27 +258,42 @@ export function Testimonials() {
           transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
           className="relative rounded-[32px] overflow-hidden border-2 border-white/80 shadow-[0_24px_60px_-15px_rgba(15,35,60,0.28)] px-5 py-12 sm:px-10 sm:py-16 lg:px-16 lg:py-20"
         >
-          {/* Panoramic Mountain & Valley Background Image with Subtle Parallax */}
+          {/* Automatic Panoramic Slideshow Background with Smooth Crossfade & Subtle Ken Burns Zoom */}
           <motion.div
             style={{ y: faqBgY, scale: faqBgScale }}
             aria-hidden="true"
-            className="absolute inset-0 w-full h-full pointer-events-none"
+            className="absolute inset-0 w-full h-full pointer-events-none bg-[#0F233C]"
           >
-            <img
-              src="/images/faq-eje-cafetero-bg.jpg"
-              alt="Paisaje montañoso de Dosquebradas y el Eje Cafetero"
-              className="w-full h-full object-cover object-center"
-            />
+            {FAQ_BACKGROUNDS.map((bg, idx) => {
+              const isActive = idx === faqBgIndex;
+              return (
+                <motion.img
+                  key={bg.src}
+                  src={bg.src}
+                  alt={isEn ? bg.labelEn : bg.labelEs}
+                  initial={false}
+                  animate={{
+                    opacity: isActive ? 1 : 0,
+                    scale: isActive ? 1.04 : 1.0,
+                  }}
+                  transition={{
+                    opacity: { duration: 1.25, ease: 'easeInOut' },
+                    scale: { duration: 4.8, ease: 'easeOut' },
+                  }}
+                  className="absolute inset-0 w-full h-full object-cover object-center"
+                />
+              );
+            })}
           </motion.div>
 
-          {/* Calibrated Atmospheric Gradient Overlay (Keeps Mountains & Birds Visible + High Contrast) */}
+          {/* Calibrated Atmospheric Gradient Overlay (Keeps Mountains, Viaduct & Birds Visible + High Contrast) */}
           <div
             aria-hidden="true"
-            className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#0F233C]/60 via-[#152C24]/45 to-[#0F233C]/75"
+            className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#0F233C]/58 via-[#152C24]/42 to-[#0F233C]/76"
           />
           <div
             aria-hidden="true"
-            className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_20%,rgba(255,255,255,0.12),transparent_65%)]"
+            className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_20%,rgba(255,255,255,0.14),transparent_65%)]"
           />
 
           <div className="relative z-10 max-w-3xl mx-auto">
@@ -281,6 +328,28 @@ export function Testimonials() {
                 </AccordionItem>
               ))}
             </Accordion>
+
+            {/* Subtle Landscape Caption & Interactive Slide Indicators */}
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-white/20">
+              <span className="text-xs font-semibold text-white/90 drop-shadow">
+                📍 {isEn ? FAQ_BACKGROUNDS[faqBgIndex].labelEn : FAQ_BACKGROUNDS[faqBgIndex].labelEs}
+              </span>
+              <div className="flex items-center gap-2">
+                {FAQ_BACKGROUNDS.map((bg, idx) => (
+                  <button
+                    key={bg.src}
+                    type="button"
+                    onClick={() => setFaqBgIndex(idx)}
+                    aria-label={isEn ? bg.labelEn : bg.labelEs}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      idx === faqBgIndex
+                        ? 'w-7 bg-[#F5B95F] shadow-sm'
+                        : 'w-2 bg-white/45 hover:bg-white/80'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         </motion.div>
       </div>
