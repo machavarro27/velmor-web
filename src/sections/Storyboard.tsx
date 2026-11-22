@@ -23,10 +23,10 @@ import { Button } from '@/components/ui/button';
 const TOTAL_FRAMES = 75;
 
 const KEYFRAME_SOURCES = [
-  '/images/scrolly-keyframe-start.jpg',
-  '/images/scrolly-keyframe-mid1.jpg',
-  '/images/scrolly-keyframe-mid2.jpg',
-  '/images/scrolly-keyframe-end.jpg',
+  '/images/scrolly-keyframe-start.jpg?v=official',
+  '/images/scrolly-keyframe-mid1.jpg?v=official',
+  '/images/scrolly-keyframe-mid2.jpg?v=official',
+  '/images/scrolly-keyframe-end.jpg?v=official',
 ] as const;
 
 interface EditorialChapter {
