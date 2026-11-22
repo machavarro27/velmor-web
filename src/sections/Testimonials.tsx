@@ -270,7 +270,7 @@ export function Testimonials() {
                 <AccordionItem
                   key={idx}
                   value={`faq-${idx}`}
-                  className="bg-white/92 hover:bg-white/98 backdrop-blur-md rounded-2xl border border-white/75 px-5 sm:px-6 shadow-[0_10px_28px_rgba(8,22,41,0.18)] transition-colors duration-200"
+                  className="bg-white/95 hover:bg-white backdrop-blur-md rounded-2xl border border-white/80 px-5 sm:px-6 shadow-[0_12px_32px_rgba(8,22,41,0.22)] transition-colors duration-200"
                 >
                   <AccordionTrigger className="text-left font-bold text-sm sm:text-base text-[#192434] hover:text-[#004B87] hover:no-underline py-4 sm:py-5">
                     {faq.q}
