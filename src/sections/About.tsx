@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { Play, Leaf, Award, Recycle, Heart, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Play, Leaf, Award, Recycle, Heart, Sparkles, CheckCircle2, Film } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -10,11 +10,48 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
+const STORY_VIDEOS = [
+  {
+    id: 'nordic-origin',
+    src: '/images/Yogurt_jar_in_Nordic_landscape_ab55d5e3_1080p.mp4',
+    poster: '/images/velmor-hero.jpg',
+    titleEs: '1. Esencia Nórdica & Origen',
+    titleEn: '1. Nordic Essence & Origin',
+  },
+  {
+    id: 'viking-voyage',
+    src: '/images/velmor-historia-barco-vikingo.mp4',
+    poster: '/images/mascota-vikingo-atardecer.jpg',
+    titleEs: '2. Travesía Vikinga Velmor',
+    titleEn: '2. Velmor Viking Voyage',
+  },
+  {
+    id: 'artisanal-commercial',
+    src: '/images/velmor-comercial-artesanal.mp4',
+    poster: '/images/scrolly-keyframe-start.jpg',
+    titleEs: '3. Comercial Yogur Artesanal',
+    titleEn: '3. Artisanal Yogurt Commercial',
+  },
+] as const;
+
 export function About() {
   const { t, i18n } = useTranslation();
   const isEn = i18n.language?.startsWith('en');
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
+  const inlineVideoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const modalVideoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+
+  const handleExclusivePlay = (
+    group: (HTMLVideoElement | null)[],
+    activeIndex: number
+  ) => {
+    group.forEach((vid, idx) => {
+      if (vid && idx !== activeIndex && !vid.paused) {
+        vid.pause();
+      }
+    });
+  };
 
   // Layered scroll parallax for smooth section transitions
   const { scrollYProgress } = useScroll({
@@ -96,7 +133,7 @@ export function About() {
         </motion.div>
 
         {/* Main Content Grid - Layered Parallax across Mobile, Tablet (md), and Desktop (lg) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-10 lg:gap-12 items-center mb-14 sm:mb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-10 lg:gap-12 items-center mb-12 sm:mb-16">
           {/* Left: Visual Showcase Card */}
           <motion.div
             style={{ y: imageCardY }}
@@ -205,6 +242,60 @@ export function About() {
           </motion.div>
         </div>
 
+        {/* "Ver nuestra historia" — 3-Column Responsive Video Grid (3 columns on desktop, 1 column on mobile) */}
+        <motion.div
+          initial={{ opacity: 0, y: 26 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+          className="mb-14 sm:mb-20"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#004B87]/10 text-[#004B87] flex items-center justify-center shrink-0">
+                <Film className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-xl sm:text-2xl font-bold text-[#192434] font-serif-display">
+                  {t('about.watchVideo')}
+                </h3>
+                <p className="text-xs sm:text-sm text-[#4E5E74]">
+                  {isEn
+                    ? 'Explore our 3 official brand stories and artisanal process videos'
+                    : 'Explora nuestros 3 videos oficiales de historia, tradición vikinga y proceso artesanal'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {STORY_VIDEOS.map((video, index) => (
+              <div
+                key={video.id}
+                className="bg-white/90 backdrop-blur-sm rounded-2xl p-3 sm:p-3.5 border border-[#004B87]/15 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="w-full rounded-xl overflow-hidden bg-[#192434] aspect-video border border-[#004B87]/15">
+                  <video
+                    ref={(el) => {
+                      inlineVideoRefs.current[index] = el;
+                    }}
+                    src={video.src}
+                    poster={video.poster}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    onPlay={() => handleExclusivePlay(inlineVideoRefs.current, index)}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <p className="mt-2.5 px-1 text-xs sm:text-sm font-bold text-[#004B87] truncate">
+                  {isEn ? video.titleEn : video.titleEs}
+                </p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
         {/* Values Grid - Responsive 1 col (mobile), 2 cols (tablet), 4 cols (desktop) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 mb-12">
           {values.map((value, index) => {
@@ -255,26 +346,39 @@ export function About() {
         </motion.div>
       </div>
 
-      {/* Responsive Story & Video Modal */}
+      {/* Responsive "Ver nuestra historia" Modal — 3-Column Grid on Desktop & 1-Column on Mobile */}
       <Dialog open={isVideoOpen} onOpenChange={setIsVideoOpen}>
-        <DialogContent className="w-[92vw] max-w-xl sm:max-w-2xl bg-white rounded-2xl p-4 sm:p-6 overflow-hidden border border-[#004B87]/15">
+        <DialogContent className="w-[94vw] max-w-xl lg:max-w-5xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl p-4 sm:p-6 border border-[#004B87]/15">
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl font-bold text-[#004B87] pr-6">
-              {t('about.title')}
+              {t('about.watchVideo')} — {t('about.title')}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="mt-2 space-y-4 w-full overflow-hidden">
-            {/* Real Product & Brand Video */}
-            <div className="w-full rounded-xl overflow-hidden bg-[#192434] aspect-video border border-[#004B87]/15">
-              <video
-                src="/images/Yogurt_jar_in_Nordic_landscape_ab55d5e3_1080p.mp4"
-                poster="/images/velmor-hero.jpg"
-                controls
-                autoPlay
-                playsInline
-                className="w-full h-full object-cover"
-              />
+          <div className="mt-2 space-y-5 w-full">
+            {/* 3 Videos Grid (3 columns on desktop lg:grid-cols-3, 1 column on mobile grid-cols-1) */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
+              {STORY_VIDEOS.map((video, index) => (
+                <div key={video.id} className="space-y-2">
+                  <div className="w-full rounded-xl overflow-hidden bg-[#192434] aspect-video border border-[#004B87]/15 shadow-sm">
+                    <video
+                      ref={(el) => {
+                        modalVideoRefs.current[index] = el;
+                      }}
+                      src={video.src}
+                      poster={video.poster}
+                      controls
+                      autoPlay={index === 0}
+                      playsInline
+                      onPlay={() => handleExclusivePlay(modalVideoRefs.current, index)}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <p className="text-xs sm:text-sm font-bold text-[#004B87] px-1 truncate">
+                    {isEn ? video.titleEn : video.titleEs}
+                  </p>
+                </div>
+              ))}
             </div>
 
             {/* Clean Story Box inside Modal */}
