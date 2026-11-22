@@ -1,7 +1,18 @@
 import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { Play, Leaf, Award, Recycle, Heart, Sparkles, CheckCircle2, Film } from 'lucide-react';
+import {
+  Play,
+  Leaf,
+  Award,
+  Recycle,
+  Heart,
+  Sparkles,
+  CheckCircle2,
+  Film,
+  ShieldCheck,
+  ArrowUpRight,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -296,30 +307,39 @@ export function About() {
           </div>
         </motion.div>
 
-        {/* Values Grid - Responsive 1 col (mobile), 2 cols (tablet), 4 cols (desktop) */}
+        {/* Values Grid - Elevated Glassmorphism, Vector Icons & Hover Micro-Interactions */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 mb-12">
           {values.map((value, index) => {
             const Icon = value.icon;
             return (
               <motion.div
                 key={value.title}
-                initial={{ opacity: 0, y: 26 }}
+                initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ delay: index * 0.08, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-                whileHover={{ y: -5 }}
-                className="p-6 rounded-2xl bg-white border border-[#004B87]/10 shadow-sm hover:shadow-md transition-all flex flex-col"
+                viewport={{ once: false, amount: 0.18 }}
+                transition={{ delay: index * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                whileHover={{ y: -7 }}
+                className="group relative p-6 sm:p-7 rounded-3xl bg-white/88 hover:bg-white/98 backdrop-blur-md border border-[#004B87]/12 hover:border-[#B47B2B]/45 shadow-[0_12px_30px_-12px_rgba(25,36,52,0.08)] hover:shadow-[0_22px_44px_-12px_rgba(180,123,43,0.2)] transition-all duration-300 flex flex-col overflow-hidden"
               >
                 <div
-                  className={`w-12 h-12 rounded-xl ${value.bgColor} flex items-center justify-center mb-4 shrink-0`}
-                >
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -top-12 -right-12 w-28 h-28 rounded-full bg-gradient-to-br from-[#B47B2B]/12 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                />
+                <div className="flex items-center justify-between mb-5">
                   <div
-                    className={`w-7 h-7 rounded-lg bg-gradient-to-br ${value.color} flex items-center justify-center`}
+                    className={`w-13 h-13 rounded-2xl ${value.bgColor} p-2.5 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-300`}
                   >
-                    <Icon className="w-4 h-4 text-white" />
+                    <div
+                      className={`w-8 h-8 rounded-xl bg-gradient-to-br ${value.color} flex items-center justify-center shadow-sm`}
+                    >
+                      <Icon className="w-4 h-4 text-white" />
+                    </div>
                   </div>
+                  <ArrowUpRight className="w-4 h-4 text-[#004B87]/35 group-hover:text-[#B47B2B] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200" />
                 </div>
-                <h4 className="text-base font-bold text-[#192434] mb-2">{value.title}</h4>
+                <h4 className="text-base sm:text-lg font-bold text-[#192434] group-hover:text-[#004B87] transition-colors font-serif-display mb-2">
+                  {value.title}
+                </h4>
                 <p className="text-xs sm:text-sm text-[#4E5E74] leading-relaxed flex-1">
                   {value.description}
                 </p>
@@ -328,16 +348,19 @@ export function About() {
           })}
         </div>
 
-        {/* Quality Certifications Banner */}
+        {/* Quality Certifications Banner (Vector Medallion + Frosted Glass) */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.25 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="bg-white rounded-2xl p-6 sm:p-8 border border-[#004B87]/15 text-center shadow-sm"
+          viewport={{ once: false, amount: 0.25 }}
+          transition={{ duration: 0.62, ease: [0.22, 1, 0.36, 1] }}
+          whileHover={{ y: -3 }}
+          className="group relative bg-gradient-to-br from-white/95 via-[#FAF8F5]/95 to-[#F3E9D8]/50 backdrop-blur-md rounded-3xl p-7 sm:p-9 border border-[#B47B2B]/25 hover:border-[#B47B2B]/50 text-center shadow-[0_14px_36px_-12px_rgba(180,123,43,0.14)] transition-all duration-300 overflow-hidden"
         >
-          <div className="text-2xl mb-2">🏅</div>
-          <h4 className="font-bold text-base sm:text-lg text-[#192434] mb-1">
+          <div className="mx-auto mb-4 w-14 h-14 rounded-2xl bg-gradient-to-br from-[#B47B2B]/15 to-[#004B87]/10 border border-[#B47B2B]/35 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform duration-300">
+            <ShieldCheck className="w-7 h-7 text-[#B47B2B]" />
+          </div>
+          <h4 className="font-bold text-lg sm:text-xl text-[#192434] font-serif-display mb-1.5">
             {t('about.certTitle')}
           </h4>
           <p className="text-xs sm:text-sm text-[#4E5E74] max-w-2xl mx-auto leading-relaxed">

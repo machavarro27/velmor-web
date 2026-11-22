@@ -1,7 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
-import { Star, Quote, ChevronLeft, ChevronRight, BadgeCheck, HelpCircle } from 'lucide-react';
+import {
+  Star,
+  Quote,
+  ChevronLeft,
+  ChevronRight,
+  BadgeCheck,
+  HelpCircle,
+  Heart,
+  MapPin,
+} from 'lucide-react';
 import { testimonials } from '@/data/products';
 import { Button } from '@/components/ui/button';
 import {
@@ -215,39 +224,67 @@ export function Testimonials() {
           </div>
         </motion.div>
 
-        {/* Social Proof Metrics Row */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.25 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto mb-20 text-center"
-        >
-          <div className="p-6 rounded-2xl bg-white border border-[#004B87]/10 shadow-sm">
-            <p className="text-2xl sm:text-3xl font-extrabold text-[#004B87]">
-              {t('testimonials.stat1Value')}
-            </p>
-            <p className="text-xs sm:text-sm text-[#4E5E74] mt-1">
-              {t('testimonials.stat1Label')}
-            </p>
-          </div>
-          <div className="p-6 rounded-2xl bg-white border border-[#004B87]/10 shadow-sm">
-            <p className="text-2xl sm:text-3xl font-extrabold text-[#2CA64E]">
-              {t('testimonials.stat2Value')}
-            </p>
-            <p className="text-xs sm:text-sm text-[#4E5E74] mt-1">
-              {t('testimonials.stat2Label')}
-            </p>
-          </div>
-          <div className="p-6 rounded-2xl bg-white border border-[#004B87]/10 shadow-sm">
-            <p className="text-2xl sm:text-3xl font-extrabold text-[#B47B2B]">
-              {t('testimonials.stat3Value')}
-            </p>
-            <p className="text-xs sm:text-sm text-[#4E5E74] mt-1">
-              {t('testimonials.stat3Label')}
-            </p>
-          </div>
-        </motion.div>
+        {/* Social Proof Metrics Row (Elevated Frosted Glass & Vector Medallions) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto mb-16">
+          {[
+            {
+              Icon: Star,
+              value: t('testimonials.stat1Value'),
+              label: t('testimonials.stat1Label'),
+              color: 'text-[#004B87]',
+              iconBg: 'bg-[#004B87]/10 text-[#004B87] group-hover:bg-[#004B87] group-hover:text-white',
+              borderHover: 'hover:border-[#004B87]/40',
+            },
+            {
+              Icon: Heart,
+              value: t('testimonials.stat2Value'),
+              label: t('testimonials.stat2Label'),
+              color: 'text-[#2CA64E]',
+              iconBg: 'bg-[#2CA64E]/12 text-[#2CA64E] group-hover:bg-[#2CA64E] group-hover:text-white',
+              borderHover: 'hover:border-[#2CA64E]/45',
+            },
+            {
+              Icon: BadgeCheck,
+              value: t('testimonials.stat3Value'),
+              label: t('testimonials.stat3Label'),
+              color: 'text-[#B47B2B]',
+              iconBg: 'bg-[#B47B2B]/15 text-[#B47B2B] group-hover:bg-[#B47B2B] group-hover:text-white',
+              borderHover: 'hover:border-[#B47B2B]/50',
+            },
+          ].map((stat, idx) => {
+            const StatIcon = stat.Icon;
+            return (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: false, amount: 0.2 }}
+                transition={{
+                  delay: idx * 0.1,
+                  duration: 0.6,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+                whileHover={{ y: -6 }}
+                className={`group p-6 rounded-3xl bg-white/90 hover:bg-white backdrop-blur-md border border-[#004B87]/12 ${stat.borderHover} shadow-[0_10px_28px_-12px_rgba(25,36,52,0.08)] hover:shadow-[0_20px_40px_-12px_rgba(180,123,43,0.18)] transition-all duration-300 flex items-center gap-4 text-left`}
+              >
+                <div
+                  className={`w-13 h-13 rounded-2xl flex items-center justify-center shrink-0 transition-colors duration-300 shadow-sm ${stat.iconBg}`}
+                  style={{ width: '3.25rem', height: '3.25rem' }}
+                >
+                  <StatIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className={`text-2xl sm:text-3xl font-extrabold tabular-nums ${stat.color}`}>
+                    {stat.value}
+                  </p>
+                  <p className="text-xs sm:text-sm font-semibold text-[#4E5E74] mt-0.5">
+                    {stat.label}
+                  </p>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
 
         {/* FAQ Section with Automatic Panoramic Slideshow of Dosquebradas / Eje Cafetero */}
         <motion.div
@@ -331,8 +368,11 @@ export function Testimonials() {
 
             {/* Subtle Landscape Caption & Interactive Slide Indicators */}
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-white/20">
-              <span className="text-xs font-semibold text-white/90 drop-shadow">
-                📍 {isEn ? FAQ_BACKGROUNDS[faqBgIndex].labelEn : FAQ_BACKGROUNDS[faqBgIndex].labelEs}
+              <span className="text-xs font-semibold text-white/90 drop-shadow inline-flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-[#F5B95F] shrink-0" />
+                <span>
+                  {isEn ? FAQ_BACKGROUNDS[faqBgIndex].labelEn : FAQ_BACKGROUNDS[faqBgIndex].labelEs}
+                </span>
               </span>
               <div className="flex items-center gap-2">
                 {FAQ_BACKGROUNDS.map((bg, idx) => (

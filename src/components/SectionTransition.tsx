@@ -23,7 +23,7 @@ export function SectionDivider({ variant = 'cream-to-cream' }: SectionDividerPro
   return (
     <div
       aria-hidden="true"
-      className={`relative w-full py-5 sm:py-7 overflow-hidden select-none ${VARIANT_BG[variant]}`}
+      className={`relative w-full py-2.5 sm:py-3.5 -my-px overflow-hidden select-none ${VARIANT_BG[variant]}`}
     >
       {/* Subtle ambient radial glow */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_50%,rgba(180,123,43,0.06),transparent_80%)]" />

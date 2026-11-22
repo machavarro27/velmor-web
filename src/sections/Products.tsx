@@ -12,6 +12,12 @@ import {
   X,
   Info,
   Gift,
+  LayoutGrid,
+  Cherry,
+  Sparkles,
+  Sun,
+  Droplets,
+  Milk,
 } from 'lucide-react';
 import { useAppStore } from '@/store';
 import {
@@ -145,13 +151,17 @@ export function Products() {
     },
   ];
 
-  const flavors: Array<{ value: typeof filters.flavor; label: string; emoji: string }> = [
-    { value: 'all', label: t('products.filterAll'), emoji: '🥣' },
-    { value: 'fresa', label: t('flavors.fresa'), emoji: '🍓' },
-    { value: 'mora', label: t('flavors.mora'), emoji: '🫐' },
-    { value: 'mango', label: t('flavors.mango'), emoji: '🥭' },
-    { value: 'maracuya', label: t('flavors.maracuya'), emoji: '💛' },
-    { value: 'natural', label: t('flavors.natural'), emoji: '🥛' },
+  const flavors: Array<{
+    value: typeof filters.flavor;
+    label: string;
+    Icon: typeof LayoutGrid;
+  }> = [
+    { value: 'all', label: t('products.filterAll'), Icon: LayoutGrid },
+    { value: 'fresa', label: t('flavors.fresa'), Icon: Cherry },
+    { value: 'mora', label: t('flavors.mora'), Icon: Sparkles },
+    { value: 'mango', label: t('flavors.mango'), Icon: Sun },
+    { value: 'maracuya', label: t('flavors.maracuya'), Icon: Droplets },
+    { value: 'natural', label: t('flavors.natural'), Icon: Milk },
   ];
 
   const compareProducts = useMemo(() => {
@@ -246,21 +256,29 @@ export function Products() {
               {t('products.filterFlavor')}:
             </span>
             <div className="flex flex-wrap gap-2">
-              {flavors.map((flavor) => (
-                <button
-                  key={flavor.value}
-                  type="button"
-                  onClick={() => setFlavorFilter(flavor.value)}
-                  className={`px-3.5 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 ${
-                    filters.flavor === flavor.value
-                      ? 'bg-[#004B87] text-white shadow-sm'
-                      : 'bg-[#FAF8F5] text-[#4E5E74] hover:text-[#004B87] border border-[#004B87]/15'
-                  }`}
-                >
-                  <span>{flavor.emoji}</span>
-                  <span>{flavor.label}</span>
-                </button>
-              ))}
+              {flavors.map((flavor) => {
+                const FlavorIcon = flavor.Icon;
+                const isActive = filters.flavor === flavor.value;
+                return (
+                  <button
+                    key={flavor.value}
+                    type="button"
+                    onClick={() => setFlavorFilter(flavor.value)}
+                    className={`px-3.5 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 ${
+                      isActive
+                        ? 'bg-[#004B87] text-white shadow-sm'
+                        : 'bg-[#FAF8F5] text-[#4E5E74] hover:text-[#004B87] hover:border-[#B47B2B]/40 border border-[#004B87]/15'
+                    }`}
+                  >
+                    <FlavorIcon
+                      className={`w-3.5 h-3.5 ${
+                        isActive ? 'text-[#F5B95F]' : 'text-[#B47B2B]'
+                      }`}
+                    />
+                    <span>{flavor.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -351,12 +369,17 @@ export function Products() {
                 <motion.div
                   key={product.id}
                   layout
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: false, amount: 0.12 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.3, delay: index * 0.03 }}
-                  whileHover={{ y: -5 }}
-                  className="group relative bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col"
+                  transition={{
+                    duration: 0.55,
+                    delay: index * 0.05,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                  whileHover={{ y: -7 }}
+                  className="group relative bg-white/95 backdrop-blur-sm rounded-3xl border border-[#004B87]/12 hover:border-[#B47B2B]/45 overflow-hidden shadow-[0_10px_28px_-12px_rgba(25,36,52,0.08)] hover:shadow-[0_24px_48px_-12px_rgba(180,123,43,0.2)] transition-[border-color,box-shadow] duration-300 flex flex-col"
                 >
                   {/* Top-Left Badge (e.g. Popular, Premium, Nuevo) */}
                   {badgeText && (

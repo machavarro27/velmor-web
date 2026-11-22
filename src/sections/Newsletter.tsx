@@ -89,15 +89,22 @@ export function Newsletter() {
           </form>
 
           {calcResult && (
-            <div className="p-4 rounded-xl bg-[#EBF4FA] border border-[#004B87]/20 text-sm font-bold text-[#004B87] mb-4">
-              🥣 {calcResult}
+            <div className="p-4 rounded-xl bg-[#EBF4FA] border border-[#004B87]/20 text-sm font-bold text-[#004B87] mb-4 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#B47B2B] shrink-0" />
+              <span>{calcResult}</span>
             </div>
           )}
 
-          <div className="p-4 rounded-2xl bg-[#F3E9D8]/60 border border-[#B47B2B]/20 text-xs sm:text-sm text-[#192434] space-y-1.5">
+          <div className="p-4 rounded-2xl bg-[#F3E9D8]/60 border border-[#B47B2B]/20 text-xs sm:text-sm text-[#192434] space-y-2">
             <p className="font-bold text-[#8C5A16]">{t('newsletter.calcTipsTitle')}</p>
-            <p className="text-[#4E5E74]">✓ {t('newsletter.calcTip1')}</p>
-            <p className="text-[#4E5E74]">✓ {t('newsletter.calcTip2')}</p>
+            <p className="text-[#4E5E74] flex items-center gap-2">
+              <Check className="w-4 h-4 text-[#2CA64E] shrink-0" />
+              <span>{t('newsletter.calcTip1')}</span>
+            </p>
+            <p className="text-[#4E5E74] flex items-center gap-2">
+              <Check className="w-4 h-4 text-[#2CA64E] shrink-0" />
+              <span>{t('newsletter.calcTip2')}</span>
+            </p>
           </div>
         </motion.div>
 
