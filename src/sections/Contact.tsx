@@ -78,10 +78,10 @@ export function Contact() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <motion.div
-          initial={{ opacity: 0, y: 26 }}
+          initial={{ opacity: 0, y: 22 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.25 }}
-          transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+          viewport={{ once: false, amount: 0.2 }}
+          transition={{ duration: 0.62, ease: [0.22, 1, 0.36, 1] }}
           className="text-center mb-14"
         >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#192434] mb-3 font-serif-display">
@@ -96,10 +96,10 @@ export function Contact() {
           {/* Left: WhatsApp Direct Care & Info Cards */}
           <motion.div
             style={{ y: leftColumnY }}
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 22 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+            viewport={{ once: false, amount: 0.15 }}
+            transition={{ duration: 0.62, ease: [0.22, 1, 0.36, 1] }}
             className="lg:col-span-5 space-y-5"
           >
             {/* Instant WhatsApp Care Card */}
@@ -164,10 +164,10 @@ export function Contact() {
           {/* Right: Contact Form */}
           <motion.div
             style={{ y: rightColumnY }}
-            initial={{ opacity: 0, y: 36 }}
+            initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: 0.65, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            viewport={{ once: false, amount: 0.15 }}
+            transition={{ duration: 0.65, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
             className="lg:col-span-7"
           >
             <form

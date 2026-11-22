@@ -168,10 +168,10 @@ export function Products() {
         {/* Section Header */}
         <motion.div
           style={{ y: headerParallaxY }}
-          initial={{ opacity: 0, y: 26 }}
+          initial={{ opacity: 0, y: 22 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.25 }}
-          transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+          viewport={{ once: false, amount: 0.2 }}
+          transition={{ duration: 0.62, ease: [0.22, 1, 0.36, 1] }}
           className="text-center mb-10 sm:mb-12"
         >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#192434] mb-4 font-serif-display">
@@ -189,10 +189,10 @@ export function Products() {
         {/* Filters Bar */}
         <motion.div
           style={{ y: filterParallaxY }}
-          initial={{ opacity: 0, y: 28 }}
+          initial={{ opacity: 0, y: 22 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 0.65, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+          viewport={{ once: false, amount: 0.15 }}
+          transition={{ duration: 0.62, delay: 0.06, ease: [0.22, 1, 0.36, 1] }}
           className="mb-10 space-y-5 bg-white p-4 sm:p-6 rounded-2xl border border-[#004B87]/10 shadow-sm"
         >
           {/* Search Input */}

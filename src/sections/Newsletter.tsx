@@ -56,10 +56,10 @@ export function Newsletter() {
         {/* Portion Calculator Box (Warm Cream Card) */}
         <motion.div
           style={{ y: calcCardY }}
-          initial={{ opacity: 0, y: 28 }}
+          initial={{ opacity: 0, y: 22 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.25 }}
-          transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+          viewport={{ once: false, amount: 0.18 }}
+          transition={{ duration: 0.62, ease: [0.22, 1, 0.36, 1] }}
           className="max-w-3xl mx-auto bg-white rounded-3xl p-6 sm:p-8 border border-[#B47B2B]/25 shadow-sm"
         >
           <div className="flex items-center gap-2.5 text-[#B47B2B] font-bold text-sm mb-2">
@@ -104,10 +104,10 @@ export function Newsletter() {
         {/* Luminous Nordic Sky Newsletter Banner */}
         <motion.div
           style={{ y: bannerCardY }}
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.25 }}
-          transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+          viewport={{ once: false, amount: 0.18 }}
+          transition={{ duration: 0.65, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
           className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#EBF4FA] via-[#D6E9F8] to-[#E2F2EA] border border-[#004B87]/15 p-8 sm:p-12 lg:p-16 shadow-md"
         >
           <div className="relative z-10 max-w-2xl mx-auto text-center">

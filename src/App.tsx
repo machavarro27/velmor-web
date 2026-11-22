@@ -1,5 +1,6 @@
 import { Toaster } from 'sonner';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { SectionDivider, SectionReveal } from '@/components/SectionTransition';
 import { Header } from '@/sections/Header';
 import { Hero } from '@/sections/Hero';
 import { Products } from '@/sections/Products';
@@ -20,19 +21,58 @@ function App() {
         {/* Header */}
         <Header />
 
-        {/* Main Content */}
+        {/* Main Content with Subtle Minimalist Section Dividers & Progressive Scroll Reveal */}
         <main className="overflow-x-clip">
+          {/* 1. Hero Section (Kept 100% intact) */}
           <Hero />
-          <Products />
+
+          <SectionDivider variant="sand-to-cream" />
+
+          {/* 2. Product Catalog */}
+          <SectionReveal yOffset={24}>
+            <Products />
+          </SectionReveal>
+
+          <SectionDivider variant="cream-to-cream" />
+
+          {/* 3. Scrollytelling Artesanal · Dosquebradas (<canvas> 75 frames) */}
           <Storyboard />
-          <About />
-          <Testimonials />
-          <Newsletter />
-          <Contact />
+
+          <SectionDivider variant="cream-to-sand" />
+
+          {/* 4. About & "Ver nuestra historia" 3-Video Grid */}
+          <SectionReveal yOffset={24}>
+            <About />
+          </SectionReveal>
+
+          <SectionDivider variant="sand-to-cream" />
+
+          {/* 5. Testimonials & FAQ with Automatic Dosquebradas Landscape Slideshow */}
+          <SectionReveal yOffset={24}>
+            <Testimonials />
+          </SectionReveal>
+
+          <SectionDivider variant="cream-to-cream" />
+
+          {/* 6. Portion Calculator & Newsletter */}
+          <SectionReveal yOffset={24}>
+            <Newsletter />
+          </SectionReveal>
+
+          <SectionDivider variant="cream-to-white" />
+
+          {/* 7. Contact & Direct WhatsApp */}
+          <SectionReveal yOffset={24}>
+            <Contact />
+          </SectionReveal>
+
+          <SectionDivider variant="white-to-sky" />
         </main>
 
-        {/* Footer */}
-        <Footer />
+        {/* Footer with "Síguenos en nuestras redes" */}
+        <SectionReveal yOffset={18}>
+          <Footer />
+        </SectionReveal>
 
         {/* Modals & Drawers */}
         <CartDrawer />

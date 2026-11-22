@@ -114,10 +114,10 @@ export function About() {
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <motion.div
-          initial={{ opacity: 0, y: 28 }}
+          initial={{ opacity: 0, y: 22 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.25 }}
-          transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+          viewport={{ once: false, amount: 0.2 }}
+          transition={{ duration: 0.62, ease: [0.22, 1, 0.36, 1] }}
           className="text-center mb-10 sm:mb-14 lg:mb-16"
         >
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#EBF4FA] text-[#004B87] text-xs sm:text-sm font-bold mb-4 border border-[#004B87]/15">
@@ -244,9 +244,9 @@ export function About() {
 
         {/* "Ver nuestra historia" — 3-Column Responsive Video Grid (3 columns on desktop, 1 column on mobile) */}
         <motion.div
-          initial={{ opacity: 0, y: 26 }}
+          initial={{ opacity: 0, y: 22 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
+          viewport={{ once: false, amount: 0.15 }}
           transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
           className="mb-14 sm:mb-20"
         >
