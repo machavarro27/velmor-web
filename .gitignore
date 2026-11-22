@@ -6,6 +6,9 @@ node_modules/
 # Production build (optional: keep or ignore dist)
 dist-ssr/
 *.local
+.env
+.env.*
+!.env.example
 
 # Logs
 logs

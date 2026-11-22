@@ -16,12 +16,12 @@ import { Chatbot } from '@/components/Chatbot';
 function App() {
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-[#FAF8F5] text-[#192434] overflow-x-hidden">
+      <div className="min-h-screen bg-[#FAF8F5] text-[#192434] overflow-x-clip">
         {/* Header */}
         <Header />
 
         {/* Main Content */}
-        <main className="overflow-x-hidden">
+        <main className="overflow-x-clip">
           <Hero />
           <Products />
           <Storyboard />
