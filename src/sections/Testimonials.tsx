@@ -23,7 +23,9 @@ export function Testimonials() {
     offset: ['start end', 'end start'],
   });
   const cardParallaxY = useTransform(scrollYProgress, [0, 1], [24, -22]);
-  const faqParallaxY = useTransform(scrollYProgress, [0, 1], [32, -16]);
+  const faqParallaxY = useTransform(scrollYProgress, [0, 1], [24, -14]);
+  const faqBgY = useTransform(scrollYProgress, [0, 1], ['-6%', '8%']);
+  const faqBgScale = useTransform(scrollYProgress, [0, 1], [1.04, 1.1]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -215,44 +217,71 @@ export function Testimonials() {
           </div>
         </motion.div>
 
-        {/* FAQ Section */}
+        {/* FAQ Section with Panoramic Dosquebradas / Eje Cafetero Mountain Background */}
         <motion.div
           style={{ y: faqParallaxY }}
           initial={{ opacity: 0, y: 28 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
+          viewport={{ once: true, amount: 0.15 }}
           transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-          className="max-w-3xl mx-auto"
+          className="relative rounded-[32px] overflow-hidden border-2 border-white/80 shadow-[0_24px_60px_-15px_rgba(15,35,60,0.28)] px-5 py-12 sm:px-10 sm:py-16 lg:px-16 lg:py-20"
         >
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 text-xs font-bold text-[#004B87] bg-[#EBF4FA] px-3.5 py-1.5 rounded-full mb-3">
-              <HelpCircle className="w-4 h-4" />
-              <span>FAQ</span>
-            </div>
-            <h3 className="text-2xl sm:text-3xl font-bold text-[#192434] font-serif-display">
-              {t('testimonials.faqTitle')}
-            </h3>
-            <p className="text-sm sm:text-base text-[#4E5E74] mt-1">
-              {t('testimonials.faqSubtitle')}
-            </p>
-          </div>
+          {/* Panoramic Mountain & Valley Background Image with Subtle Parallax */}
+          <motion.div
+            style={{ y: faqBgY, scale: faqBgScale }}
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full pointer-events-none"
+          >
+            <img
+              src="/images/faq-eje-cafetero-bg.jpg"
+              alt="Paisaje montañoso de Dosquebradas y el Eje Cafetero"
+              className="w-full h-full object-cover object-center"
+            />
+          </motion.div>
 
-          <Accordion type="single" collapsible className="space-y-3">
-            {faqs.map((faq, idx) => (
-              <AccordionItem
-                key={idx}
-                value={`faq-${idx}`}
-                className="bg-white rounded-2xl border border-[#004B87]/12 px-5 shadow-sm"
-              >
-                <AccordionTrigger className="text-left font-bold text-sm sm:text-base text-[#192434] hover:text-[#004B87] hover:no-underline py-4">
-                  {faq.q}
-                </AccordionTrigger>
-                <AccordionContent className="text-xs sm:text-sm text-[#4E5E74] leading-relaxed pb-4">
-                  {faq.a}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+          {/* Calibrated Atmospheric Gradient Overlay (Keeps Mountains & Birds Visible + High Contrast) */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#0F233C]/60 via-[#152C24]/45 to-[#0F233C]/75"
+          />
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_20%,rgba(255,255,255,0.12),transparent_65%)]"
+          />
+
+          <div className="relative z-10 max-w-3xl mx-auto">
+            <div className="text-center mb-10 sm:mb-12">
+              <div className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.16em] text-[#FDE68A] bg-[#0F233C]/80 backdrop-blur-md border border-[#F5B95F]/40 px-4 py-1.5 rounded-full mb-4 shadow-sm">
+                <HelpCircle className="w-4 h-4 text-[#F5B95F]" />
+                <span>
+                  {isEn ? 'FAQ · Dosquebradas & Coffee Region' : 'FAQ · Dosquebradas & Eje Cafetero'}
+                </span>
+              </div>
+              <h3 className="text-3xl sm:text-4xl lg:text-[44px] font-bold text-white font-serif-display leading-tight drop-shadow-[0_4px_18px_rgba(0,0,0,0.55)]">
+                {t('testimonials.faqTitle')}
+              </h3>
+              <p className="text-sm sm:text-base lg:text-lg text-[#F1F5F9] mt-2.5 max-w-xl mx-auto font-medium drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
+                {t('testimonials.faqSubtitle')}
+              </p>
+            </div>
+
+            <Accordion type="single" collapsible className="space-y-3.5">
+              {faqs.map((faq, idx) => (
+                <AccordionItem
+                  key={idx}
+                  value={`faq-${idx}`}
+                  className="bg-white/92 hover:bg-white/98 backdrop-blur-md rounded-2xl border border-white/75 px-5 sm:px-6 shadow-[0_10px_28px_rgba(8,22,41,0.18)] transition-colors duration-200"
+                >
+                  <AccordionTrigger className="text-left font-bold text-sm sm:text-base text-[#192434] hover:text-[#004B87] hover:no-underline py-4 sm:py-5">
+                    {faq.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-xs sm:text-sm text-[#3D4C60] leading-relaxed pb-5 font-medium">
+                    {faq.a}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
         </motion.div>
       </div>
     </section>
