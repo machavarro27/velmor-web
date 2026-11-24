@@ -1,26 +1,17 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  motion,
-  AnimatePresence,
-  useScroll,
-  useSpring,
-  useTransform,
-  useMotionValueEvent,
-} from 'motion/react';
+import { motion } from 'motion/react';
 import {
   Sparkles,
   ArrowRight,
-  Layers,
-  Film,
+  ChevronLeft,
+  ChevronRight,
   MapPin,
   Award,
   Leaf,
   ShoppingBag,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-const TOTAL_FRAMES = 75;
 
 const KEYFRAME_SOURCES = [
   '/images/scrolly-keyframe-start.jpg?v=official',
@@ -29,44 +20,34 @@ const KEYFRAME_SOURCES = [
   '/images/scrolly-keyframe-end.jpg?v=official',
 ] as const;
 
-interface EditorialChapter {
+interface EditorialSlide {
   id: string;
   num: string;
-  range: [number, number];
-  targetProgress: number;
+  image: string;
+  stepTitle: string;
   kicker: string;
   title: string;
   highlight: string;
   description: string;
   metricValue: string;
   metricLabel: string;
-  keyframeIndex: number;
 }
 
 export function Storyboard() {
   const { t, i18n } = useTranslation();
   const isEn = i18n.language?.startsWith('en');
 
-  const [viewMode, setViewMode] = useState<'scrolly' | 'editorial'>('scrolly');
-  const [activeChapterIdx, setActiveChapterIdx] = useState(0);
-  const [currentFrameNum, setCurrentFrameNum] = useState(1);
-  const [imagesLoaded, setImagesLoaded] = useState(false);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const [manualProgress, setManualProgress] = useState<number | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const galleryRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const isProgrammaticScrollRef = useRef(false);
 
-  const scrollTrackRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const loadedImagesRef = useRef<HTMLImageElement[]>([]);
-  const renderedProgressRef = useRef<number>(-1);
-  const isInViewportRef = useRef<boolean>(true);
-  const rafIdRef = useRef<number | null>(null);
-
-  const chapters: EditorialChapter[] = [
+  const slides: EditorialSlide[] = [
     {
       id: 'origin',
       num: '01',
-      range: [0, 0.27],
-      targetProgress: 0.04,
+      image: KEYFRAME_SOURCES[0],
+      stepTitle: t('storyboard.step1Title'),
       kicker: isEn
         ? 'ARTISANAL ORIGIN · DOSQUEBRADAS, COFFEE REGION'
         : 'ORIGEN ARTESANAL · DOSQUEBRADAS, EJE CAFETERO',
@@ -75,13 +56,12 @@ export function Storyboard() {
       description: t('storyboard.step1Desc'),
       metricValue: '100%',
       metricLabel: isEn ? 'Fresh Dosquebradas Milk' : 'Leche Fresca de Dosquebradas',
-      keyframeIndex: 0,
     },
     {
       id: 'unsealing',
       num: '02',
-      range: [0.27, 0.54],
-      targetProgress: 0.36,
+      image: KEYFRAME_SOURCES[1],
+      stepTitle: t('storyboard.step2Title'),
       kicker: isEn
         ? 'SLOW COLD FERMENTATION · LIVE CULTURES'
         : 'FERMENTACIÓN LENTA EN FRÍO · CULTIVOS VIVOS',
@@ -90,13 +70,12 @@ export function Storyboard() {
       description: t('storyboard.step2Desc'),
       metricValue: '24h',
       metricLabel: isEn ? 'Artisanal Cold Culturing' : 'Maduración Artesanal en Frío',
-      keyframeIndex: 1,
     },
     {
       id: 'texture',
       num: '03',
-      range: [0.54, 0.78],
-      targetProgress: 0.67,
+      image: KEYFRAME_SOURCES[2],
+      stepTitle: t('storyboard.step3Title'),
       kicker: isEn
         ? '4X DAIRY CONCENTRATION · VELVETY SKYR'
         : '4X CONCENTRACIÓN LÁCTEA · TEXTURA SKYR',
@@ -105,13 +84,12 @@ export function Storyboard() {
       description: t('storyboard.step3Desc'),
       metricValue: '15g',
       metricLabel: isEn ? 'Natural Protein per Serving' : 'Proteína Natural por Porción',
-      keyframeIndex: 2,
     },
     {
       id: 'harvest',
       num: '04',
-      range: [0.78, 1.01],
-      targetProgress: 0.98,
+      image: KEYFRAME_SOURCES[3],
+      stepTitle: t('storyboard.step4Title'),
       kicker: isEn
         ? 'LIVING HARVEST · 0% PRESERVATIVES'
         : 'COSECHA VIVA DEL EJE CAFETERO · 0% CONSERVANTES',
@@ -120,619 +98,351 @@ export function Storyboard() {
       description: t('storyboard.step4Desc'),
       metricValue: '0%',
       metricLabel: isEn ? 'Added Sugars or Preservatives' : 'Conservantes o Azúcar Añadida',
-      keyframeIndex: 3,
     },
   ];
 
-  // Detect prefers-reduced-motion reactively (QA Invariant #1)
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
+  // Scroll the horizontal track to a specific card without moving or blocking vertical page scroll
+  const scrollToSlide = useCallback(
+    (index: number) => {
+      const clamped = (index + slides.length) % slides.length;
+      setActiveIndex(clamped);
 
-  // Preload 4 pixel-locked editorial keyframes into memory (QA Invariant #2)
-  useEffect(() => {
-    let cancelled = false;
-    const imgs: HTMLImageElement[] = new Array(KEYFRAME_SOURCES.length);
-    let loadedCount = 0;
+      const container = galleryRef.current;
+      const card = cardRefs.current[clamped];
+      if (!container || !card) return;
 
-    KEYFRAME_SOURCES.forEach((src, index) => {
-      const img = new Image();
-      img.decoding = 'async';
-      img.src = src;
-      img.onload = () => {
-        if (cancelled) return;
-        imgs[index] = img;
-        loadedCount += 1;
-        loadedImagesRef.current = imgs;
-        if (index === 0 || loadedCount === KEYFRAME_SOURCES.length) {
-          setImagesLoaded(true);
-          renderedProgressRef.current = -1;
-        }
-      };
-    });
+      isProgrammaticScrollRef.current = true;
+      const containerCenter = container.clientWidth / 2;
+      const cardCenter = card.offsetLeft + card.clientWidth / 2;
+      const targetLeft = Math.max(0, cardCenter - containerCenter);
 
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // Scroll progress tracking with motion/react
-  const { scrollYProgress } = useScroll({
-    target: scrollTrackRef,
-    offset: ['start start', 'end end'],
-  });
-
-  const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 180,
-    damping: 30,
-    restDelta: 0.0005,
-  });
-
-  const progressBarScaleY = useTransform(smoothProgress, [0, 1], [0.06, 1]);
-
-  // Core 60fps <canvas> Frame Synthesizer (Interpolates 75 Virtual Frames from the 4 Locked Keyframes)
-  const renderCanvasFrame = useCallback((rawProgress: number) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const progress = Math.min(1, Math.max(0, rawProgress));
-    const imgs = loadedImagesRef.current;
-    const validImgs = imgs.filter(Boolean);
-    if (validImgs.length === 0) return;
-
-    // Cap DPR at 1.5 desktop / 1.0 mobile for optimal VRAM & 60fps performance (QA Invariant #3)
-    const isMobile = window.innerWidth < 768;
-    const maxDpr = isMobile ? 1.0 : 1.5;
-    const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
-    const rect = canvas.getBoundingClientRect();
-    const targetW = Math.max(1, Math.floor(rect.width * dpr));
-    const targetH = Math.max(1, Math.floor(rect.height * dpr));
-
-    if (canvas.width !== targetW || canvas.height !== targetH) {
-      canvas.width = targetW;
-      canvas.height = targetH;
-    }
-
-    const totalSegments = KEYFRAME_SOURCES.length - 1; // 3 segments across 4 keyframes
-    const scaled = progress * totalSegments;
-    const segIdx = Math.min(totalSegments - 1, Math.floor(scaled));
-    const localT = scaled - segIdx;
-    // Cubic ease-in-out between consecutive pixel-locked keyframes
-    const smoothT =
-      localT < 0.5
-        ? 4 * localT * localT * localT
-        : 1 - Math.pow(-2 * localT + 2, 3) / 2;
-
-    const imgA = imgs[segIdx] || validImgs[0];
-    const imgB = imgs[Math.min(KEYFRAME_SOURCES.length - 1, segIdx + 1)] || imgA;
-
-    ctx.clearRect(0, 0, targetW, targetH);
-
-    // Subtle continuous optical dolly-in zoom (1.00 -> 1.045) across the 75 frames
-    const dollyScale = 1.0 + progress * 0.045;
-
-    const drawCoverAnchored = (image: HTMLImageElement, alpha: number, extraScale = 1) => {
-      if (!image || !image.complete || image.naturalWidth === 0) return;
-      const iw = image.naturalWidth;
-      const ih = image.naturalHeight;
-      const scale = Math.max(targetW / iw, targetH / ih) * dollyScale * extraScale;
-      const dw = iw * scale;
-      const dh = ih * scale;
-      // Anchor right-center so the Velmor jar stays framed on the right and negative space stays on the left
-      const anchorX = isMobile ? 0.68 : 0.56;
-      const dx = (targetW - dw) * anchorX;
-      const dy = (targetH - dh) * 0.5;
-
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.drawImage(image, dx, dy, dw, dh);
-      ctx.restore();
-    };
-
-    // Base frame A
-    drawCoverAnchored(imgA, 1.0, 1.0);
-
-    // Interpolated frame B with subtle upward kinetic drift during lid unsealing / fruit levitation
-    if (imgB && imgB !== imgA && smoothT > 0.002) {
-      drawCoverAnchored(imgB, smoothT, 1.0 + (1 - smoothT) * 0.008);
-    }
-
-    // Subtle procedural cold Nordic mist & Artisanal Gold / Borealis micro-particles synchronized to scroll
-    ctx.save();
-    const particleCount = isMobile ? 10 : 18;
-    for (let i = 0; i < particleCount; i++) {
-      const seed = (i + 1) * 17.37;
-      const px = ((Math.sin(seed) * 0.5 + 0.5) * 0.55 + 0.4) * targetW;
-      const basePy = (Math.cos(seed * 1.3) * 0.5 + 0.5) * targetH;
-      const py = (basePy - progress * targetH * (0.18 + (i % 4) * 0.05) + targetH) % targetH;
-      const radius = (1.2 + (i % 3) * 1.1) * dpr;
-      const alpha = Math.sin(progress * Math.PI) * (0.14 + (i % 3) * 0.06);
-
-      ctx.beginPath();
-      ctx.arc(px, py, radius, 0, Math.PI * 2);
-      ctx.fillStyle =
-        i % 3 === 0
-          ? `rgba(180, 123, 43, ${alpha})` // Artisanal Gold #B47B2B
-          : i % 3 === 1
-          ? `rgba(51, 166, 216, ${alpha})` // Nordic Sky Blue #33A6D8
-          : `rgba(255, 255, 255, ${alpha * 1.2})`; // Cold Nordic Frost
-      ctx.fill();
-    }
-    ctx.restore();
-  }, []);
-
-  // Paint initial frame and handle window resize / reduced motion / manual scrubber
-  useEffect(() => {
-    const activeProg =
-      manualProgress !== null ? manualProgress : smoothProgress.get() || 0;
-    renderCanvasFrame(activeProg);
-
-    const handleResize = () => {
-      renderedProgressRef.current = -1;
-      renderCanvasFrame(
-        manualProgress !== null ? manualProgress : smoothProgress.get() || 0
-      );
-    };
-
-    window.addEventListener('resize', handleResize, { passive: true });
-    return () => window.removeEventListener('resize', handleResize);
-  }, [imagesLoaded, manualProgress, renderCanvasFrame, smoothProgress]);
-
-  // IntersectionObserver to pause canvas updates when off-screen (QA Invariant #3)
-  useEffect(() => {
-    const el = scrollTrackRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        isInViewportRef.current = Boolean(entries[0]?.isIntersecting);
-      },
-      { threshold: 0.01 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  // Bidirectional Scroll Listener -> 60fps <canvas> Frame Update
-  useMotionValueEvent(smoothProgress, 'change', (latest) => {
-    if (!isInViewportRef.current || viewMode !== 'scrolly') return;
-
-    // Release manual override once the user scrolls naturally
-    if (manualProgress !== null && Math.abs(latest - manualProgress) > 0.035) {
-      setManualProgress(null);
-    }
-
-    const effectiveProgress = manualProgress !== null ? manualProgress : latest;
-    const frameIdx = Math.min(
-      TOTAL_FRAMES,
-      Math.max(1, Math.round(effectiveProgress * (TOTAL_FRAMES - 1)) + 1)
-    );
-    setCurrentFrameNum(frameIdx);
-
-    // Determine active editorial chapter (01 - 04)
-    const chapterIdx =
-      effectiveProgress < 0.27
-        ? 0
-        : effectiveProgress < 0.54
-        ? 1
-        : effectiveProgress < 0.78
-        ? 2
-        : 3;
-    setActiveChapterIdx(chapterIdx);
-
-    if (Math.abs(effectiveProgress - renderedProgressRef.current) > 0.001) {
-      renderedProgressRef.current = effectiveProgress;
-      if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
-      rafIdRef.current = requestAnimationFrame(() => {
-        renderCanvasFrame(effectiveProgress);
-      });
-    }
-  });
-
-  const handleJumpToChapter = (index: number) => {
-    const target = chapters[index];
-    if (!target) return;
-    setActiveChapterIdx(index);
-    const frameIdx = Math.min(
-      TOTAL_FRAMES,
-      Math.max(1, Math.round(target.targetProgress * (TOTAL_FRAMES - 1)) + 1)
-    );
-    setCurrentFrameNum(frameIdx);
-    setManualProgress(target.targetProgress);
-    renderCanvasFrame(target.targetProgress);
-
-    // Also smoothly position scroll if in scrolly mode
-    if (viewMode === 'scrolly' && scrollTrackRef.current) {
-      const rect = scrollTrackRef.current.getBoundingClientRect();
-      const absoluteTop = window.scrollY + rect.top;
-      const scrollableDistance = Math.max(0, rect.height - window.innerHeight);
-      window.scrollTo({
-        top: absoluteTop + scrollableDistance * target.targetProgress,
+      container.scrollTo({
+        left: targetLeft,
         behavior: 'smooth',
       });
-    }
-  };
 
-  const handleScrubSlider = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const frame = Number(e.target.value);
-    const norm = (frame - 1) / (TOTAL_FRAMES - 1);
-    setCurrentFrameNum(frame);
-    setManualProgress(norm);
-    const chapterIdx = norm < 0.27 ? 0 : norm < 0.54 ? 1 : norm < 0.78 ? 2 : 3;
-    setActiveChapterIdx(chapterIdx);
-    renderCanvasFrame(norm);
-  };
+      window.setTimeout(() => {
+        isProgrammaticScrollRef.current = false;
+      }, 480);
+    },
+    [slides.length]
+  );
+
+  // Sync activeIndex when the user swipes horizontally on touch / trackpad
+  useEffect(() => {
+    const container = galleryRef.current;
+    if (!container) return;
+
+    const handleHorizontalScroll = () => {
+      if (isProgrammaticScrollRef.current) return;
+      const center = container.scrollLeft + container.clientWidth / 2;
+      let closestIdx = 0;
+      let minDistance = Number.POSITIVE_INFINITY;
+
+      cardRefs.current.forEach((card, idx) => {
+        if (!card) return;
+        const cardCenter = card.offsetLeft + card.clientWidth / 2;
+        const dist = Math.abs(center - cardCenter);
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestIdx = idx;
+        }
+      });
+
+      setActiveIndex(closestIdx);
+    };
+
+    container.addEventListener('scroll', handleHorizontalScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleHorizontalScroll);
+  }, []);
 
   const scrollToProducts = () => {
     const el = document.querySelector('#products');
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const currentChapter = chapters[activeChapterIdx] || chapters[0];
-  const effectiveEditorialMode = viewMode === 'editorial' || prefersReducedMotion;
-
   return (
     <section
       id="scrollytelling"
       aria-label={t('storyboard.title')}
-      className="relative bg-[#FAF8F5] border-y border-[#004B87]/12"
+      className="relative py-16 sm:py-20 lg:py-24 bg-[#FAF8F5] overflow-hidden"
     >
-      {/* MODO 1: SCROLLYTELLING <CANVAS> 60FPS SINCRONIZADO CON EL SCROLL */}
-      {!effectiveEditorialMode ? (
-        <div ref={scrollTrackRef} className="relative h-[290vh] sm:h-[320vh]">
-          <div className="sticky top-16 h-[calc(100dvh-4rem)] w-full overflow-hidden flex flex-col justify-between bg-[#FAF8F5]">
-            {/* Layer 1: Static Fallback Poster (Immediate First Paint) */}
-            <img
-              src={KEYFRAME_SOURCES[currentChapter.keyframeIndex]}
-              alt={currentChapter.title}
-              className="absolute inset-0 w-full h-full object-cover object-[68%_center] sm:object-[56%_center] pointer-events-none select-none"
-            />
+      {/* Subtle Ambient Background Accents */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-24 right-10 w-96 h-96 rounded-full bg-[#33A6D8]/10 blur-3xl"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-24 left-10 w-96 h-96 rounded-full bg-[#B47B2B]/10 blur-3xl"
+      />
 
-            {/* Layer 2: High-DPI 60fps Scrollytelling <canvas> */}
-            <canvas
-              ref={canvasRef}
-              aria-label="Secuencia interactiva de Scrollytelling del Yogur Artesanal Nórdico Velmor"
-              className="absolute inset-0 w-full h-full pointer-events-none"
-            />
-
-            {/* Layer 3: Luminous Editorial Scrim on the Left Negative Space for WCAG AAA Readability */}
-            <div
-              aria-hidden="true"
-              className="absolute inset-0 pointer-events-none bg-gradient-to-r from-[#FAF8F5]/96 via-[#FAF8F5]/82 to-transparent sm:via-[#FAF8F5]/55 lg:via-[#FAF8F5]/35"
-            />
-            <div
-              aria-hidden="true"
-              className="absolute inset-x-0 bottom-0 h-28 pointer-events-none bg-gradient-to-t from-[#FAF8F5]/90 via-[#FAF8F5]/40 to-transparent"
-            />
-
-            {/* Top Editorial Control Bar: Kicker + Mode Switcher ("Scrollytelling <canvas>" vs "Composición Estática") */}
-            <div className="relative z-20 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-5 sm:pt-7 flex flex-wrap items-center justify-between gap-3">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-[#004B87]/15 shadow-sm">
-                <Sparkles className="w-3.5 h-3.5 text-[#B47B2B]" />
-                <span className="text-[11px] sm:text-xs font-extrabold uppercase tracking-[0.18em] text-[#004B87]">
-                  {isEn
-                    ? 'Interactive Scrollytelling · Dosquebradas'
-                    : 'Scrollytelling Artesanal · Dosquebradas'}
-                </span>
-              </div>
-
-              <div className="inline-flex items-center gap-1.5 bg-white/92 backdrop-blur-md p-1 rounded-full border border-[#004B87]/15 shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => setViewMode('scrolly')}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#004B87] text-white shadow-sm transition-colors"
-                >
-                  <Film className="w-3.5 h-3.5" />
-                  <span>{isEn ? 'Canvas Sequence' : 'Secuencia <canvas>'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode('editorial')}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-[#4E5E74] hover:text-[#004B87] transition-colors"
-                >
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>{isEn ? 'Editorial Keyframes' : 'Vista Editorial Estática'}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Middle Stage: Left Negative-Space Editorial Typography + Vertical Fermentation Thread */}
-            <div className="relative z-20 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 my-auto">
-              <div className="grid lg:grid-cols-12 gap-8 items-center">
-                <div className="lg:col-span-6 xl:col-span-5 flex gap-5 sm:gap-6 items-stretch">
-                  {/* Vertical Progress Thread ("Hilo de Fermentación Lenta") */}
-                  <div className="hidden sm:flex flex-col items-center py-2">
-                    <span className="text-xs font-extrabold tabular-nums text-[#B47B2B] mb-2">
-                      {currentChapter.num}
-                    </span>
-                    <div className="relative w-0.5 flex-1 bg-[#004B87]/15 rounded-full overflow-hidden">
-                      <motion.div
-                        style={{ scaleY: progressBarScaleY }}
-                        className="absolute inset-0 bg-gradient-to-b from-[#004B87] via-[#33A6D8] to-[#B47B2B] origin-top"
-                      />
-                    </div>
-                    <span className="text-[11px] font-bold tabular-nums text-[#4E5E74] mt-2">
-                      04
-                    </span>
-                  </div>
-
-                  {/* Animated Editorial Copy Block (High Contrast WCAG AAA on Clean Negative Space) */}
-                  <div className="flex-1 max-w-[46ch]">
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        key={currentChapter.id}
-                        initial={{ opacity: 0, y: 18, filter: 'blur(4px)' }}
-                        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                        exit={{ opacity: 0, y: -14, filter: 'blur(3px)' }}
-                        transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                        className="space-y-4"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <span className="font-serif-display italic text-2xl sm:text-3xl font-bold tabular-nums text-[#B47B2B]">
-                            {currentChapter.num}
-                          </span>
-                          <span className="h-px w-6 bg-[#B47B2B]/50" />
-                          <span className="text-[11px] sm:text-xs font-extrabold uppercase tracking-[0.2em] text-[#004B87]">
-                            {currentChapter.kicker}
-                          </span>
-                        </div>
-
-                        <h2 className="text-3xl sm:text-4xl lg:text-[48px] font-bold text-[#192434] font-serif-display leading-[1.06] tracking-[-0.02em] text-balance">
-                          <span className="block">{currentChapter.title}</span>
-                          <span className="block italic text-[#8C5A16] font-semibold mt-1">
-                            {currentChapter.highlight}
-                          </span>
-                        </h2>
-
-                        <p className="text-sm sm:text-base lg:text-lg text-[#2C3A4E] leading-[1.68] font-medium text-pretty">
-                          {currentChapter.description}
-                        </p>
-
-                        {/* Clean Editorial Metric + Artisanal Gold CTA */}
-                        <div className="pt-2 flex flex-wrap items-center gap-4">
-                          <div className="inline-flex items-center gap-3 bg-white/92 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-[#004B87]/15 shadow-sm">
-                            <span className="text-xl sm:text-2xl font-extrabold text-[#004B87] tabular-nums">
-                              {currentChapter.metricValue}
-                            </span>
-                            <span className="text-xs font-bold text-[#4E5E74] leading-tight max-w-[140px]">
-                              {currentChapter.metricLabel}
-                            </span>
-                          </div>
-
-                          <Button
-                            onClick={scrollToProducts}
-                            className="bg-[#B47B2B] hover:bg-[#9A6620] text-white font-bold px-6 py-5 rounded-xl shadow-sm transition-[transform,box-shadow,background-color] duration-200 ease-out active:scale-[0.97] group"
-                          >
-                            <ShoppingBag className="w-4 h-4 mr-2" />
-                            <span>
-                              {isEn ? 'Order Artisanal Skyr' : 'Explorar Catálogo'}
-                            </span>
-                            <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1 transition-transform" />
-                          </Button>
-                        </div>
-                      </motion.div>
-                    </AnimatePresence>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Interactive Scrubber Bar: Chapter Pills (01-04) + Frame Scrubber (Frame XX / 75) */}
-            <div className="relative z-20 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pb-5 sm:pb-7">
-              <div className="bg-white/92 backdrop-blur-md rounded-2xl p-3 sm:px-5 sm:py-3.5 border border-[#004B87]/15 shadow-md flex flex-col md:flex-row items-center justify-between gap-3.5">
-                {/* 4 Chapter Direct Jump Buttons */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 w-full md:w-auto">
-                  {chapters.map((chap, idx) => {
-                    const isActive = activeChapterIdx === idx;
-                    return (
-                      <button
-                        key={chap.id}
-                        type="button"
-                        onClick={() => handleJumpToChapter(idx)}
-                        className={`px-3 py-1.5 rounded-xl text-left transition-[background-color,color,transform] duration-200 active:scale-[0.98] ${
-                          isActive
-                            ? 'bg-[#004B87] text-white shadow-sm'
-                            : 'bg-[#FAF8F5] text-[#4E5E74] hover:text-[#004B87] border border-[#004B87]/10'
-                        }`}
-                      >
-                        <span
-                          className={`text-[10px] font-extrabold tabular-nums block ${
-                            isActive ? 'text-[#F5B95F]' : 'text-[#B47B2B]'
-                          }`}
-                        >
-                          {chap.num}
-                        </span>
-                        <span className="text-xs font-bold truncate block">
-                          {t(`storyboard.step${idx + 1}Title`)}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Interactive Frame Scrubber Slider + Live Frame Counter */}
-                <div className="flex items-center gap-3 w-full md:w-72 lg:w-80">
-                  <span className="text-[11px] font-bold text-[#004B87] uppercase tracking-wider shrink-0">
-                    {isEn ? 'Scroll / Scrub' : 'Scroll / Frame'}
-                  </span>
-                  <input
-                    type="range"
-                    min={1}
-                    max={TOTAL_FRAMES}
-                    value={currentFrameNum}
-                    onChange={handleScrubSlider}
-                    aria-label="Control de fotogramas de la secuencia artesanal Velmor"
-                    className="w-full accent-[#B47B2B] cursor-pointer h-1.5 bg-[#EBF4FA] rounded-lg"
-                  />
-                  <span className="text-xs font-extrabold tabular-nums text-[#192434] bg-[#FAF8F5] px-2.5 py-1 rounded-lg border border-[#004B87]/15 shrink-0">
-                    {String(currentFrameNum).padStart(2, '0')} / {TOTAL_FRAMES}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        /* MODO 2: COMPOSICIÓN ESTÁTICA EDITORIAL LIMPIA (ETAPA 1 DE VALIDACIÓN & ACCESIBILIDAD) */
-        <div className="py-20 lg:py-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header & Mode Switcher */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-14">
-            <div className="max-w-2xl">
-              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EBF4FA] text-[#004B87] text-xs font-extrabold uppercase tracking-[0.2em] mb-4 border border-[#004B87]/15">
-                <Sparkles className="w-3.5 h-3.5 text-[#B47B2B]" />
-                <span>
-                  {isEn
-                    ? 'Editorial Storyboard · Dosquebradas, Coffee Region'
-                    : 'Composición Editorial · Dosquebradas, Eje Cafetero'}
-                </span>
+      {/* Section Header + Chapter Tabs + Visible Left/Right Arrow Controls */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 sm:mb-10">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+          <div className="max-w-2xl">
+            <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-[#004B87]/15 shadow-sm text-[11px] sm:text-xs font-extrabold uppercase tracking-[0.18em] text-[#004B87] mb-3.5">
+              <Sparkles className="w-3.5 h-3.5 text-[#B47B2B]" />
+              <span>
+                {isEn
+                  ? 'Artisanal Process Gallery · Dosquebradas'
+                  : 'Galería Artesanal · Dosquebradas, Eje Cafetero'}
               </span>
-              <h2 className="text-3xl sm:text-4xl lg:text-[52px] font-bold text-[#192434] font-serif-display leading-[1.06] tracking-[-0.02em] text-balance">
-                {t('storyboard.title')}
-              </h2>
-              <p className="text-base sm:text-lg text-[#3D4C60] mt-3 leading-relaxed">
-                {t('storyboard.subtitle')}
-              </p>
-            </div>
-
-            {!prefersReducedMotion && (
-              <div className="inline-flex items-center gap-1.5 bg-white p-1.5 rounded-full border border-[#004B87]/15 shadow-sm shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setViewMode('scrolly')}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-[#4E5E74] hover:text-[#004B87] transition-colors"
-                >
-                  <Film className="w-3.5 h-3.5" />
-                  <span>{isEn ? 'Canvas Sequence' : 'Secuencia <canvas>'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode('editorial')}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#004B87] text-white shadow-sm transition-colors"
-                >
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>{isEn ? 'Editorial Keyframes' : 'Vista Editorial Estática'}</span>
-                </button>
-              </div>
-            )}
+            </span>
+            <h2 className="text-3xl sm:text-4xl lg:text-[46px] font-bold text-[#192434] font-serif-display leading-[1.08] tracking-tight">
+              {t('storyboard.title')}
+            </h2>
+            <p className="text-sm sm:text-base lg:text-lg text-[#4E5E74] mt-2.5 leading-relaxed">
+              {t('storyboard.subtitle')}
+            </p>
           </div>
 
-          {/* Asymmetric 5/7 Editorial Split Composition */}
-          <div className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-start">
-            {/* Left 5 Cols: Clean Editorial Chapters without Cluttered Boxes */}
-            <div className="lg:col-span-5 space-y-8 border-l-2 border-[#004B87]/15 pl-6 sm:pl-8">
-              {chapters.map((chap, idx) => {
-                const isSelected = activeChapterIdx === idx;
-                return (
-                  <div
-                    key={chap.id}
-                    onClick={() => setActiveChapterIdx(idx)}
-                    className={`cursor-pointer transition-opacity duration-300 ${
-                      isSelected ? 'opacity-100' : 'opacity-60 hover:opacity-90'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 mb-1.5">
-                      <span className="font-serif-display italic text-2xl font-bold tabular-nums text-[#B47B2B]">
-                        {chap.num}
-                      </span>
-                      <span className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#004B87]">
-                        {t(`storyboard.step${idx + 1}Title`)}
-                      </span>
-                    </div>
-                    <h3 className="text-xl sm:text-2xl font-bold text-[#192434] font-serif-display leading-snug mb-2">
-                      {chap.title} <span className="italic text-[#8C5A16]">{chap.highlight}</span>
-                    </h3>
-                    <p className="text-sm text-[#3D4C60] leading-relaxed">
-                      {chap.description}
-                    </p>
-                  </div>
-                );
-              })}
+          {/* Desktop & Mobile Prominent Left / Right Navigation Arrows + Counter */}
+          <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+            <span className="text-xs font-bold text-[#4E5E74] bg-white/90 px-3.5 py-2 rounded-full border border-[#004B87]/15 shadow-sm tabular-nums">
+              {isEn ? 'Slide' : 'Fotografía'} {String(activeIndex + 1).padStart(2, '0')} /{' '}
+              {String(slides.length).padStart(2, '0')}
+            </span>
 
-              <div className="pt-4">
-                <Button
-                  onClick={scrollToProducts}
-                  className="bg-[#B47B2B] hover:bg-[#9A6620] text-white font-bold px-7 py-5 rounded-xl shadow-sm transition-[transform,box-shadow,background-color] duration-200 ease-out active:scale-[0.97] group"
-                >
-                  <ShoppingBag className="w-4 h-4 mr-2" />
-                  <span>{isEn ? 'Explore Artisanal Skyr' : 'Explorar Catálogo Velmor'}</span>
-                  <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Right 7 Cols: High-Contrast Editorial Keyframe Showcase */}
-            <div className="lg:col-span-7 space-y-5">
-              <div className="relative rounded-[28px] overflow-hidden border-2 border-white shadow-xl bg-white aspect-video">
-                <img
-                  src={KEYFRAME_SOURCES[activeChapterIdx]}
-                  alt={currentChapter.title}
-                  className="w-full h-full object-cover transition-transform duration-700"
-                />
-                <div className="absolute bottom-4 left-4 right-4 bg-[#FAF8F5]/95 backdrop-blur-md rounded-2xl p-4 border border-[#004B87]/15 flex flex-wrap items-center justify-between gap-3 shadow-md">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#2CA64E]/15 text-[#2CA64E] flex items-center justify-center shrink-0">
-                      <MapPin className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-extrabold text-[#004B87] uppercase tracking-wider">
-                        Keyframe {currentChapter.num} · Dosquebradas, Eje Cafetero
-                      </p>
-                      <p className="text-sm font-bold text-[#192434]">
-                        {t(`storyboard.step${activeChapterIdx + 1}Title`)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs font-bold text-[#004B87]">
-                    <span className="inline-flex items-center gap-1 bg-white px-3 py-1.5 rounded-xl border border-[#004B87]/15">
-                      <Award className="w-3.5 h-3.5 text-[#B47B2B]" />
-                      15g Proteína
-                    </span>
-                    <span className="inline-flex items-center gap-1 bg-white px-3 py-1.5 rounded-xl border border-[#2CA64E]/25 text-[#2CA64E]">
-                      <Leaf className="w-3.5 h-3.5" />
-                      100% Natural
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* 4 Generated Keyframes Filmstrip Selector */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {chapters.map((chap, idx) => (
-                  <button
-                    key={chap.id}
-                    type="button"
-                    onClick={() => setActiveChapterIdx(idx)}
-                    className={`group relative rounded-2xl overflow-hidden border-2 text-left transition-all ${
-                      activeChapterIdx === idx
-                        ? 'border-[#004B87] ring-2 ring-[#004B87]/25 shadow-md'
-                        : 'border-[#004B87]/12 opacity-75 hover:opacity-100'
-                    }`}
-                  >
-                    <img
-                      src={KEYFRAME_SOURCES[idx]}
-                      alt={chap.title}
-                      className="w-full h-20 object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="p-2 bg-white">
-                      <span className="text-[10px] font-extrabold text-[#B47B2B] tabular-nums block">
-                        KEYFRAME {chap.num}
-                      </span>
-                      <span className="text-xs font-bold text-[#192434] truncate block">
-                        {t(`storyboard.step${idx + 1}Title`)}
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => scrollToSlide(activeIndex - 1)}
+                aria-label={isEn ? 'Previous photograph' : 'Fotografía anterior'}
+                className="w-11 h-11 rounded-full bg-white hover:bg-[#004B87] text-[#192434] hover:text-white border border-[#004B87]/20 shadow-sm hover:shadow-md flex items-center justify-center transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004B87]"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSlide(activeIndex + 1)}
+                aria-label={isEn ? 'Next photograph' : 'Siguiente fotografía'}
+                className="w-11 h-11 rounded-full bg-[#004B87] hover:bg-[#003865] text-white border border-[#004B87] shadow-sm hover:shadow-md flex items-center justify-center transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004B87]"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>
-      )}
+
+        {/* 4 Direct Chapter Navigation Pills */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-6">
+          {slides.map((slide, idx) => {
+            const isActive = activeIndex === idx;
+            return (
+              <button
+                key={slide.id}
+                type="button"
+                onClick={() => scrollToSlide(idx)}
+                className={`px-4 py-2.5 rounded-2xl text-left transition-all duration-200 active:scale-[0.98] border ${
+                  isActive
+                    ? 'bg-[#004B87] text-white border-[#004B87] shadow-md'
+                    : 'bg-white/85 hover:bg-white text-[#4E5E74] hover:text-[#004B87] border-[#004B87]/12 shadow-sm'
+                }`}
+              >
+                <span
+                  className={`text-[10px] font-extrabold tabular-nums block ${
+                    isActive ? 'text-[#F5B95F]' : 'text-[#B47B2B]'
+                  }`}
+                >
+                  {isEn ? `STEP ${slide.num}` : `PASO ${slide.num}`}
+                </span>
+                <span className="text-xs sm:text-sm font-bold truncate block mt-0.5">
+                  {slide.stepTitle}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Horizontal Interactive Gallery Track (Swipeable, Peek of Next Slide, Never Blocks Vertical Scroll) */}
+      <div className="relative z-10 max-w-[1440px] mx-auto">
+        {/* Floating Side Arrow Buttons Over the Gallery (Desktop) */}
+        <button
+          type="button"
+          onClick={() => scrollToSlide(activeIndex - 1)}
+          aria-label={isEn ? 'Previous slide' : 'Anterior'}
+          className="hidden md:flex absolute left-3 lg:left-6 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-white/95 hover:bg-[#004B87] text-[#192434] hover:text-white border border-[#004B87]/20 shadow-xl items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95"
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => scrollToSlide(activeIndex + 1)}
+          aria-label={isEn ? 'Next slide' : 'Siguiente'}
+          className="hidden md:flex absolute right-3 lg:right-6 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-white/95 hover:bg-[#004B87] text-[#192434] hover:text-white border border-[#004B87]/20 shadow-xl items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95"
+        >
+          <ChevronRight className="w-6 h-6" />
+        </button>
+
+        {/* Horizontal Scroll Container with Snap & Peek */}
+        <div
+          ref={galleryRef}
+          className="flex items-stretch gap-5 sm:gap-7 overflow-x-auto snap-x snap-mandatory scroll-smooth px-4 sm:px-8 lg:px-16 pb-4 pt-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {slides.map((slide, idx) => {
+            const isActive = activeIndex === idx;
+            return (
+              <motion.div
+                key={slide.id}
+                ref={(el) => {
+                  cardRefs.current[idx] = el;
+                }}
+                onClick={() => {
+                  if (!isActive) scrollToSlide(idx);
+                }}
+                animate={{
+                  scale: isActive ? 1 : 0.96,
+                  opacity: isActive ? 1 : 0.72,
+                }}
+                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                className={`relative shrink-0 w-[88%] sm:w-[84%] lg:w-[80%] xl:w-[1040px] snap-center rounded-[28px] sm:rounded-[32px] overflow-hidden border-2 transition-shadow duration-300 bg-white ${
+                  isActive
+                    ? 'border-[#004B87]/25 shadow-[0_24px_55px_-15px_rgba(0,75,135,0.22)]'
+                    : 'border-[#004B87]/10 shadow-md cursor-pointer hover:opacity-90'
+                }`}
+              >
+                <div className="relative min-h-[430px] sm:min-h-[470px] lg:min-h-[510px] w-full flex flex-col justify-between p-6 sm:p-9 lg:p-12 overflow-hidden">
+                  {/* Full-Bleed Official Velmor Keyframe Photograph */}
+                  <img
+                    src={slide.image}
+                    alt={`${slide.stepTitle} — ${slide.title} ${slide.highlight}`}
+                    loading={idx === 0 ? 'eager' : 'lazy'}
+                    className="absolute inset-0 w-full h-full object-cover object-[68%_center] sm:object-[58%_center] select-none pointer-events-none transition-transform duration-700"
+                  />
+
+                  {/* Luminous Editorial Scrim on the Left for High-Contrast Typography */}
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-0 pointer-events-none bg-gradient-to-r from-[#FAF8F5]/96 via-[#FAF8F5]/86 to-transparent sm:via-[#FAF8F5]/68 lg:via-[#FAF8F5]/42"
+                  />
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-x-0 bottom-0 h-24 pointer-events-none bg-gradient-to-t from-[#FAF8F5]/85 via-[#FAF8F5]/30 to-transparent"
+                  />
+
+                  {/* Top Row Badges Inside Slide */}
+                  <div className="relative z-10 flex flex-wrap items-center justify-between gap-2">
+                    <div className="inline-flex items-center gap-2 bg-white/92 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-[#004B87]/15 shadow-sm">
+                      <span className="font-serif-display italic text-base font-bold tabular-nums text-[#B47B2B]">
+                        {slide.num}
+                      </span>
+                      <span className="h-3 w-px bg-[#004B87]/20" />
+                      <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#004B87]">
+                        {slide.kicker}
+                      </span>
+                    </div>
+
+                    <div className="hidden sm:inline-flex items-center gap-2 bg-white/92 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-[#2CA64E]/25 text-xs font-bold text-[#192434] shadow-sm">
+                      <MapPin className="w-3.5 h-3.5 text-[#2CA64E]" />
+                      <span>Dosquebradas · Eje Cafetero</span>
+                    </div>
+                  </div>
+
+                  {/* Editorial Narrative Block on Left Negative Space */}
+                  <div className="relative z-10 max-w-[44ch] my-6 sm:my-auto space-y-3.5">
+                    <h3 className="text-2xl sm:text-4xl lg:text-[44px] font-bold text-[#192434] font-serif-display leading-[1.08] tracking-[-0.02em] text-balance">
+                      <span className="block">{slide.title}</span>
+                      <span className="block italic text-[#8C5A16] font-semibold mt-1">
+                        {slide.highlight}
+                      </span>
+                    </h3>
+
+                    <p className="text-xs sm:text-base text-[#2C3A4E] leading-relaxed font-medium text-pretty">
+                      {slide.description}
+                    </p>
+
+                    <div className="pt-2 flex flex-wrap items-center gap-3.5">
+                      <div className="inline-flex items-center gap-2.5 bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-[#004B87]/15 shadow-sm">
+                        <span className="text-xl sm:text-2xl font-extrabold text-[#004B87] tabular-nums">
+                          {slide.metricValue}
+                        </span>
+                        <span className="text-[11px] sm:text-xs font-bold text-[#4E5E74] leading-tight max-w-[135px]">
+                          {slide.metricLabel}
+                        </span>
+                      </div>
+
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          scrollToProducts();
+                        }}
+                        className="bg-[#B47B2B] hover:bg-[#9A6620] text-white font-bold px-5 sm:px-6 py-5 rounded-xl shadow-sm transition-[transform,box-shadow,background-color] duration-200 ease-out active:scale-[0.97] group"
+                      >
+                        <ShoppingBag className="w-4 h-4 mr-2" />
+                        <span>
+                          {isEn ? 'Order Artisanal Skyr' : 'Explorar Catálogo'}
+                        </span>
+                        <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1 transition-transform" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Bottom Bar Inside Slide: Step Title + Next Slide Hint */}
+                  <div className="relative z-10 flex items-center justify-between gap-3 pt-3 border-t border-[#004B87]/10">
+                    <div className="flex items-center gap-3 text-xs font-bold text-[#004B87]">
+                      <span className="inline-flex items-center gap-1 bg-white/90 px-3 py-1 rounded-xl border border-[#004B87]/15">
+                        <Award className="w-3.5 h-3.5 text-[#B47B2B]" />
+                        15g {isEn ? 'Protein' : 'Proteína'}
+                      </span>
+                      <span className="inline-flex items-center gap-1 bg-white/90 px-3 py-1 rounded-xl border border-[#2CA64E]/25 text-[#2CA64E]">
+                        <Leaf className="w-3.5 h-3.5" />
+                        100% Natural
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        scrollToSlide(idx + 1);
+                      }}
+                      className="inline-flex items-center gap-1.5 text-xs font-extrabold text-[#004B87] hover:text-[#B47B2B] bg-white/95 px-3.5 py-1.5 rounded-full border border-[#004B87]/15 shadow-sm transition-colors"
+                    >
+                      <span>
+                        {idx < slides.length - 1
+                          ? isEn
+                            ? `Next: ${slides[idx + 1].stepTitle}`
+                            : `Siguiente: ${slides[idx + 1].stepTitle}`
+                          : isEn
+                          ? 'Back to Step 01'
+                          : 'Volver al Paso 01'}
+                      </span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Bottom Pagination Dots + Swipe Hint */}
+        <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-4 px-4">
+          <div className="flex items-center gap-2">
+            {slides.map((slide, idx) => (
+              <button
+                key={slide.id}
+                type="button"
+                onClick={() => scrollToSlide(idx)}
+                aria-label={`${slide.num} ${slide.stepTitle}`}
+                className={`h-2.5 rounded-full transition-all duration-300 ${
+                  activeIndex === idx
+                    ? 'w-9 bg-[#004B87] shadow-sm'
+                    : 'w-2.5 bg-[#004B87]/25 hover:bg-[#004B87]/50'
+                }`}
+              />
+            ))}
+          </div>
+          <span className="text-xs font-semibold text-[#4E5E74]">
+            {isEn
+              ? '← Swipe or use the arrows to explore all 4 stages →'
+              : '← Desliza horizontalmente o usa las flechas para explorar las 4 etapas →'}
+          </span>
+        </div>
+      </div>
     </section>
   );
 }

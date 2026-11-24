@@ -4,6 +4,7 @@ import { SectionDivider, SectionReveal } from '@/components/SectionTransition';
 import { Header } from '@/sections/Header';
 import { Hero } from '@/sections/Hero';
 import { Products } from '@/sections/Products';
+import { HowToBuy } from '@/sections/HowToBuy';
 import { Storyboard } from '@/sections/Storyboard';
 import { About } from '@/sections/About';
 import { Testimonials } from '@/sections/Testimonials';
@@ -21,47 +22,56 @@ function App() {
         {/* Header */}
         <Header />
 
-        {/* Main Content with Subtle Minimalist Section Dividers & Progressive Scroll Reveal */}
+        {/* Main Content — Ordered: 1. Hero -> 2. Products -> 3. HowToBuy -> 4. Storyboard -> 5. About -> 6. Testimonials -> 7. Newsletter -> 8. Contact */}
         <main className="overflow-x-clip">
-          {/* 1. Hero Section (Kept 100% intact) */}
+          {/* 1. Inicio / Hero Principal */}
           <Hero />
 
-          <SectionDivider variant="sand-to-cream" />
+          <SectionDivider variant="cream-to-cream" />
 
-          {/* 2. Product Catalog */}
+          {/* 2. Productos / Catálogo */}
           <SectionReveal yOffset={24}>
             <Products />
           </SectionReveal>
 
-          <SectionDivider variant="cream-to-cream" />
+          <SectionDivider variant="cream-to-sand" />
 
-          {/* 3. Scrollytelling Artesanal · Dosquebradas (<canvas> 75 frames) */}
-          <Storyboard />
+          {/* 3. Cómo comprar (Reubicado inmediatamente después de Productos) */}
+          <SectionReveal yOffset={24}>
+            <HowToBuy />
+          </SectionReveal>
+
+          <SectionDivider variant="sand-to-cream" />
+
+          {/* 4. Galería Horizontal Artesanal · Dosquebradas (Sin bloqueo de scroll vertical) */}
+          <SectionReveal yOffset={24}>
+            <Storyboard />
+          </SectionReveal>
 
           <SectionDivider variant="cream-to-sand" />
 
-          {/* 4. About & "Ver nuestra historia" 3-Video Grid */}
+          {/* 5. Nosotros & "Ver nuestra historia" */}
           <SectionReveal yOffset={24}>
             <About />
           </SectionReveal>
 
           <SectionDivider variant="sand-to-cream" />
 
-          {/* 5. Testimonials & FAQ with Automatic Dosquebradas Landscape Slideshow */}
+          {/* 6. Testimonios & Preguntas Frecuentes */}
           <SectionReveal yOffset={24}>
             <Testimonials />
           </SectionReveal>
 
           <SectionDivider variant="cream-to-cream" />
 
-          {/* 6. Portion Calculator & Newsletter */}
+          {/* 7. Calculadora de Porciones & Newsletter */}
           <SectionReveal yOffset={24}>
             <Newsletter />
           </SectionReveal>
 
           <SectionDivider variant="cream-to-white" />
 
-          {/* 7. Contact & Direct WhatsApp */}
+          {/* 8. Contáctanos */}
           <SectionReveal yOffset={24}>
             <Contact />
           </SectionReveal>
@@ -69,7 +79,7 @@ function App() {
           <SectionDivider variant="white-to-sky" />
         </main>
 
-        {/* Footer with "Síguenos en nuestras redes" */}
+        {/* Footer con "Síguenos en nuestras redes" */}
         <SectionReveal yOffset={18}>
           <Footer />
         </SectionReveal>

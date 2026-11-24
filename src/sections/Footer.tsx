@@ -5,12 +5,11 @@ import { Button } from '@/components/ui/button';
 
 /**
  * URLs oficiales de las redes sociales de Yogur Velmor.
- * Reemplaza cada valor cuando tengas los enlaces definitivos de cada perfil.
  */
 const SOCIAL_URLS = {
-  tiktok: 'https://www.tiktok.com',
-  youtube: 'https://www.youtube.com',
-  instagram: 'https://www.instagram.com',
+  tiktok: 'https://vm.tiktok.com/ZS9PPMTD6Njsb-XVC8U/',
+  youtube: 'https://www.youtube.com/@YogurtVelmor',
+  instagram: 'https://www.instagram.com/yogurt_velmor/',
 } as const;
 
 function TikTokIcon({ className = 'w-5 h-5' }: { className?: string }) {
